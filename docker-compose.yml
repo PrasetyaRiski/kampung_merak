@@ -25,16 +25,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    env_file: ./fastapi-backend/.env
     environment:
       MYSQL_HOST: db
       MYSQL_PORT: "3306"
       MYSQL_USER: root
       MYSQL_PASSWORD: kampung_merak
       MYSQL_DATABASE: kampung_merak
-      API_KEY_WEB: ${API_KEY_WEB:-dev-api-key-web}
-      API_KEY_ANDROID: ${API_KEY_ANDROID:-dev-api-key-android}
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-ganti-di-produksi}
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://merak.ndalemkerto.com}
     ports:
       - "8000:8000"
 

@@ -25,7 +25,7 @@ app = FastAPI(title="Kampung Merak API", version="1.0.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://merak.ndalemkerto.com")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://abdulrosyid.my.id")
 origins = [o.strip() for o in CORS_ORIGINS.split(",")]
 origins.extend(["http://localhost:3000", "http://localhost:8000"])
 
