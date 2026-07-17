@@ -108,8 +108,7 @@ Semua request (termasuk endpoint publik) **wajib** menyertakan header `X-API-Key
 | `staff`   | Ya    | Kelola data operasional, lihat Sales. Tidak bisa Finance   |
 | viewer    | Tidak | Hanya GET endpoint publik (data operasional)              |
 
-**Seed admin:** Saat pertama kali startup, user `USR-001` (pemilik) dibuat otomatis.  
-Default: `admin@kampungmerak.id` / `admin123` (ganti di produksi via `.env`).
+**Seed admin:** Saat pertama kali startup, user `USR-001` (pemilik) dibuat otomatis jika env `FIRST_ADMIN_EMAIL` dan `FIRST_ADMIN_PASSWORD` diisi.
 
 ### Endpoints
 
@@ -405,8 +404,8 @@ Fitur:
 | `API_KEY_ANDROID`       | `dev-api-key-android`            | API Key untuk Android client   |
 | `JWT_SECRET`            | `dev-secret-ganti-di-produksi`   | Secret key untuk JWT           |
 | `CORS_ORIGINS`          | `https://merak.ndalemkerto.com`  | Origin yang diizinkan (CORS)   |
-| `FIRST_ADMIN_EMAIL`     | `admin@kampungmerak.id`          | Email admin seed pertama       |
-| `FIRST_ADMIN_PASSWORD`  | `admin123`                       | Password admin seed pertama    |
+| `FIRST_ADMIN_EMAIL`     | — (wajib isi)                    | Email admin seed pertama       |
+| `FIRST_ADMIN_PASSWORD`  | — (wajib isi)                    | Password admin seed pertama    |
 
 ### server/.env
 
@@ -425,9 +424,10 @@ BASE="http://localhost:8000"
 TOKEN="<login dulu untuk dapat token>"
 
 # 1. Login admin (user USR-001 dibuat otomatis saat startup)
+# Ganti dengan email & password yang sudah di-set di .env
 TOKEN=$(curl -s -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
-  -X POST -d '{"email":"admin@kampungmerak.id","password":"admin123"}' \
+  -X POST -d '{"email":"admin@email.anda","password":"password-anda"}' \
   "$BASE/auth/login" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
 # 2. Tambah indukan

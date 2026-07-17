@@ -105,17 +105,18 @@ def startup():
 
         first_user = db.query(User).first()
         if first_user is None:
-            admin_email = os.getenv("FIRST_ADMIN_EMAIL", "admin@kampungmerak.id")
-            admin_password = os.getenv("FIRST_ADMIN_PASSWORD", "admin123")
-            seed_user = User(
-                id="USR-001",
-                email=admin_email,
-                hashed_password=get_password_hash(admin_password),
-                nama="Admin Utama",
-                role="pemilik",
-            )
-            db.add(seed_user)
-            db.commit()
+            admin_email = os.getenv("FIRST_ADMIN_EMAIL")
+            admin_password = os.getenv("FIRST_ADMIN_PASSWORD")
+            if admin_email and admin_password:
+                seed_user = User(
+                    id="USR-001",
+                    email=admin_email,
+                    hashed_password=get_password_hash(admin_password),
+                    nama="Admin Utama",
+                    role="pemilik",
+                )
+                db.add(seed_user)
+                db.commit()
     finally:
         db.close()
 
