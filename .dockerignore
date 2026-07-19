@@ -1,0 +1,8 @@
+node_modules
+dist
+.git
+kampung-merak-inkubator-mqtt.rar
+src.rar
+server
+backend
+fastapi-backend
