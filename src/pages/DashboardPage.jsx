@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import PageHeader from "../components/PageHeader.jsx";
 import RoleNotice from "../components/RoleNotice.jsx";
 import StatCard from "../components/StatCard.jsx";
@@ -10,6 +11,7 @@ import EmergencyControlPanel from "../components/EmergencyControlPanel.jsx";
 import SystemLogs from "../components/SystemLogs.jsx";
 import VarietyToggle from "../components/VarietyToggle.jsx";
 import { formatNumber, VARIETAS } from "../data/constants.js";
+import { fetchApi } from "../utils/api.js";
 
 export default function DashboardPage({
   role,
@@ -20,12 +22,24 @@ export default function DashboardPage({
   temperatureTrend,
   activeVariety,
   setActiveVariety,
-  alerts,
-  setAlerts,
   publish,
   eggs,
   logs
 }) {
+  const [summary, setSummary] = useState(null);
+
+  useEffect(() => {
+    const loadSummary = async () => {
+      try {
+        const data = await fetchApi('/api/dashboard/summary');
+        setSummary(data);
+      } catch (err) {
+        console.error("Gagal memuat dashboard summary", err);
+      }
+    };
+    loadSummary();
+  }, []);
+
   const isTempIdeal = telemetry.temperature >= 37.5 && telemetry.temperature <= 38.0;
   const isHumIdeal = telemetry.humidity >= 45 && telemetry.humidity <= 50;
 
@@ -79,6 +93,22 @@ export default function DashboardPage({
         />
       </div>
 
+      {summary && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="km-card p-5 bg-surface border-l-4 border-l-teal-iridescence">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-teal-iridescence">Total Telur Aktif</p>
+            <p className="mt-1 font-display text-3xl font-extrabold text-ink-primary">{summary.total_telur_aktif}</p>
+            <p className="mt-0.5 font-body text-xs text-ink-secondary">Dalam Mesin Inkubator</p>
+          </div>
+          <div className="km-card p-5 bg-surface border-l-4 border-l-status-success">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-status-success">Total Anakan Bulan Ini</p>
+            <p className="mt-1 font-display text-3xl font-extrabold text-ink-primary">{summary.total_anakan_bulan_ini}</p>
+            <p className="mt-0.5 font-body text-xs text-ink-secondary">Menetas Sukses</p>
+          </div>
+        </div>
+      )}
+
+
       <IncubationTrendChart trend={temperatureTrend} />
       
       {role === "admin" && <HatcheryPerformanceChart eggs={eggs} />}
@@ -87,8 +117,6 @@ export default function DashboardPage({
         <div className="space-y-6">
           <IncubationProfile variety={activeVariety} />
           <AlertPanel
-            alerts={alerts}
-            setAlerts={setAlerts}
             role={role}
             publish={publish}
           />

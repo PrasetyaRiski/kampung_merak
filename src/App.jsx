@@ -12,7 +12,10 @@ import SensorHistoryPage from "./pages/SensorHistoryPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import AccountsPage from "./pages/AccountsPage.jsx";
 import SalesPage from "./pages/SalesPage.jsx";
+import FinancePage from "./pages/FinancePage.jsx";
 import KatalogPage from "./pages/KatalogPage.jsx";
+import BreedersPage from "./pages/BreedersPage.jsx";
+import ChicksPage from "./pages/ChicksPage.jsx";
 
 // Hooks & Data
 import { useMqttBridge } from "./hooks/useMqttBridge.js";
@@ -22,7 +25,6 @@ import {
   INITIAL_EGGS,
   INITIAL_PEAFOWL,
   INITIAL_SALES,
-  INITIAL_ALERTS,
 } from "./data/constants.js";
 
 // Custom hook for localStorage (previously inline)
@@ -59,7 +61,7 @@ export default function App() {
   const [eggs, setEggsState] = useStoredState("km_eggs", INITIAL_EGGS);
   const [peafowl, setPeafowl] = useStoredState("km_peafowl", INITIAL_PEAFOWL);
   const [sales, setSalesState] = useStoredState("km_sales", INITIAL_SALES);
-  const [alerts, setAlerts] = useStoredState("km_alerts", INITIAL_ALERTS);
+  const [finance, setFinanceState] = useStoredState("km_finance", []);
 
   // Sync wrappers for database REST API
   const setEggs = async (val) => {
@@ -142,6 +144,46 @@ export default function App() {
     }
   };
 
+  const setFinance = async (val) => {
+    const nextState = typeof val === "function" ? val(finance) : val;
+    setFinanceState(nextState);
+    
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+    if (apiBaseUrl === undefined) return;
+
+    try {
+      if (nextState.length > finance.length) {
+        const added = nextState.find(item => !finance.some(x => x.id === item.id));
+        if (added) {
+          await fetchApi(`/api/finance`, {
+            method: "POST",
+            body: JSON.stringify(added),
+          });
+        }
+      } else if (nextState.length < finance.length) {
+        const deleted = finance.find(item => !nextState.some(x => x.id === item.id));
+        if (deleted) {
+          await fetchApi(`/api/finance/${deleted.id}`, {
+            method: "DELETE",
+          });
+        }
+      } else {
+        const updated = nextState.find(item => {
+          const old = finance.find(x => x.id === item.id);
+          return old && JSON.stringify(old) !== JSON.stringify(item);
+        });
+        if (updated) {
+          await fetchApi(`/api/finance/${updated.id}`, {
+            method: "PUT",
+            body: JSON.stringify(updated),
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Gagal sinkronisasi data keuangan ke API:", err);
+    }
+  };
+
   // === UI STATES ===
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -158,25 +200,15 @@ export default function App() {
   // Fetch initial data from API if configured
   useEffect(() => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-    if (!apiBaseUrl) return;
+    if (apiBaseUrl === undefined) return;
 
-    const fetchInitialData = async () => {
-      try {
-        const eggsData = await fetchApi(`/api/eggs`);
-        setEggsState(eggsData);
-      } catch (err) {
-        console.error("Gagal mengambil data telur dari API:", err);
-      }
-
-      try {
-        const salesData = await fetchApi(`/api/sales`);
-        setSalesState(salesData);
-      } catch (err) {
-        console.error("Gagal mengambil data penjualan dari API:", err);
-      }
-    };
-
-    fetchInitialData();
+    console.log("Memuat data dari API untuk inisialisasi state...");
+    Promise.allSettled([
+      fetchApi('/api/eggs').then(data => setEggsState(data)).catch(err => console.warn("Gagal memuat telur:", err)),
+      fetchApi('/api/breeders').then(data => setPeafowl(data)).catch(err => console.warn("Gagal memuat indukan:", err)),
+      fetchApi('/api/sales').then(data => setSalesState(data)).catch(err => console.warn("Gagal memuat penjualan:", err)),
+      fetchApi('/api/finance').then(data => setFinanceState(data)).catch(err => console.warn("Gagal memuat finance:", err)),
+    ]);
   }, []);
 
   // === MQTT BRIDGE ===
@@ -207,7 +239,7 @@ export default function App() {
 
   useEffect(() => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-    if (!apiBaseUrl) return;
+    if (apiBaseUrl === undefined) return;
     if (telemetry.temp === null || telemetry.humidity === null || telemetry.temp === undefined || telemetry.humidity === undefined) return;
 
     const now = Date.now();
@@ -275,8 +307,6 @@ export default function App() {
       clientId,
       temperatureTrend,
       humidityTrend,
-      alerts,
-      setAlerts,
       activeVariety,
       setActiveVariety,
       cctvUrl,
@@ -291,8 +321,6 @@ export default function App() {
             clientId={clientId}
             temperatureTrend={temperatureTrend}
             activeVariety={activeVariety}
-            alerts={alerts}
-            setAlerts={setAlerts}
             eggs={eggs}
             logs={logs}
           />
@@ -303,6 +331,10 @@ export default function App() {
         return <EggPage {...props} eggs={eggs} setEggs={setEggs} />;
       case "katalog":
         return <KatalogPage {...props} onPageChange={handlePageChange} />;
+      case "indukan":
+        return <BreedersPage {...props} />;
+      case "anakan":
+        return <ChicksPage {...props} />;
       case "histori":
         return <SensorHistoryPage {...props} />;
       case "pengaturan":
@@ -315,6 +347,8 @@ export default function App() {
         );
       case "penjualan":
         return <SalesPage {...props} sales={sales} setSales={setSales} />;
+      case "finance":
+        return <FinancePage {...props} finance={finance} setFinance={setFinance} />;
       case "akun":
         return <AccountsPage {...props} />;
       default:

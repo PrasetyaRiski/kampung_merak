@@ -1,19 +1,35 @@
+import { useState, useEffect } from "react";
 import PageHeader from "../components/PageHeader.jsx";
 import RoleNotice, { AccessDenied } from "../components/RoleNotice.jsx";
 import SectionCard from "../components/SectionCard.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import { ROLES, getMonthKey } from "../data/constants.js";
-
-// Mock history data since there is no real DB
-const mockHistoryData = [
-  { time: "2026-07-09 10:00:00", temp: 37.5, hum: 45, lamp: "OFF", motor: "OFF" },
-  { time: "2026-07-09 10:15:00", temp: 37.4, hum: 46, lamp: "ON", motor: "OFF" },
-  { time: "2026-07-09 10:30:00", temp: 37.8, hum: 44, lamp: "OFF", motor: "OFF" },
-  { time: "2026-07-09 10:45:00", temp: 37.7, hum: 45, lamp: "OFF", motor: "ON" },
-  { time: "2026-07-09 11:00:00", temp: 37.6, hum: 45, lamp: "ON", motor: "OFF" },
-];
+import { fetchApi } from "../utils/api.js";
 
 export default function SensorHistoryPage({ role }) {
+  const [historyData, setHistoryData] = useState([]);
+  const [avgTemp, setAvgTemp] = useState(0);
+  const [avgHum, setAvgHum] = useState(0);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const data = await fetchApi('/api/incubator/telemetry-logs');
+        setHistoryData(data.reverse()); // latest first or based on API order
+        
+        if (data.length > 0) {
+          const sumTemp = data.reduce((acc, curr) => acc + curr.temperature, 0);
+          const sumHum = data.reduce((acc, curr) => acc + curr.humidity, 0);
+          setAvgTemp(sumTemp / data.length);
+          setAvgHum(sumHum / data.length);
+        }
+      } catch (err) {
+        console.error("Gagal memuat histori sensor:", err);
+      }
+    };
+    loadHistory();
+  }, []);
+
   if (!ROLES[role].allowed.includes("histori")) {
     return <AccessDenied role={role} feature="Histori Sensor" />;
   }
@@ -29,15 +45,15 @@ export default function SensorHistoryPage({ role }) {
       <RoleNotice role={role} />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="km-card p-5 bg-surface">
+        <div className="km-card p-5 bg-surface border-l-4 border-l-teal-iridescence">
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-teal-iridescence">Rata-rata Suhu</p>
-          <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">37.6 °C</p>
-          <p className="mt-0.5 font-body text-xs text-ink-secondary">Bulan ini</p>
+          <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">{avgTemp > 0 ? avgTemp.toFixed(1) : "-"} °C</p>
+          <p className="mt-0.5 font-body text-xs text-ink-secondary">Berdasarkan data tersimpan</p>
         </div>
-        <div className="km-card p-5 bg-surface">
-          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-teal-iridescence">Rata-rata Kelembaban</p>
-          <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">45 %</p>
-          <p className="mt-0.5 font-body text-xs text-ink-secondary">Bulan ini</p>
+        <div className="km-card p-5 bg-surface border-l-4 border-l-status-success">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-status-success">Rata-rata Kelembaban</p>
+          <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">{avgHum > 0 ? avgHum.toFixed(0) : "-"} %</p>
+          <p className="mt-0.5 font-body text-xs text-ink-secondary">Berdasarkan data tersimpan</p>
         </div>
       </div>
 
@@ -52,25 +68,37 @@ export default function SensorHistoryPage({ role }) {
               </tr>
             </thead>
             <tbody>
-              {mockHistoryData.map((row, i) => (
-                <tr key={i}>
-                  <td>
-                    <span className="font-mono text-sm font-semibold">{row.time}</span>
-                  </td>
-                  <td>
-                    <span className="font-mono text-sm">{row.temp.toFixed(1)}</span>
-                  </td>
-                  <td>
-                    <span className="font-mono text-sm">{row.hum}</span>
+              {historyData.length === 0 ? (
+                <tr>
+                  <td colSpan="3" className="py-8">
+                    <EmptyState
+                      icon="analytics"
+                      title="Data Kosong"
+                      desc="Belum ada riwayat telemetri yang tercatat."
+                    />
                   </td>
                 </tr>
-              ))}
+              ) : (
+                historyData.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      <span className="font-mono text-sm font-semibold">{new Date(row.timestamp).toLocaleString("id-ID")}</span>
+                    </td>
+                    <td>
+                      <span className="font-mono text-sm">{row.temperature.toFixed(1)}</span>
+                    </td>
+                    <td>
+                      <span className="font-mono text-sm">{row.humidity.toFixed(0)}</span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
         <div className="p-4 bg-alpine-low border-t border-alpine-high text-center">
           <p className="font-body text-xs text-ink-secondary">
-            Catatan: Karena keterbatasan implementasi tanpa backend database, data histori ini bersifat simulasi statis.
+            Data telemetri disinkronisasi setiap 1 menit dari bacaan real-time.
           </p>
         </div>
       </SectionCard>

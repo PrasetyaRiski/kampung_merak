@@ -1,23 +1,56 @@
+import { useState, useEffect } from "react";
 import Icon from "./Icon.jsx";
 import StatusBadge, { getAlertVariant } from "./StatusBadge.jsx";
 import EmptyState from "./EmptyState.jsx";
 import { ROLES, MQTT_TOPICS } from "../data/constants.js";
+import { fetchApi } from "../utils/api.js";
 
-export default function AlertPanel({ alerts, setAlerts, role, publish }) {
+export default function AlertPanel({ role, publish }) {
+  const [alerts, setAlerts] = useState([]);
   const canAck = ROLES[role].canAcknowledge;
+
+  useEffect(() => {
+    const loadAlerts = async () => {
+      try {
+        const data = await fetchApi('/api/alerts');
+        const mappedAlerts = data.map(a => ({
+          id: a.id,
+          status: a.is_read ? "acknowledged" : "open",
+          level: a.level,
+          title: a.tipe,
+          detail: a.pesan,
+          source: a.tipe,
+          createdAt: a.created_at ? new Date(a.created_at).toLocaleString("id-ID") : "-",
+          acknowledgedBy: "Sistem"
+        }));
+        setAlerts(mappedAlerts);
+      } catch (err) {
+        console.error("Gagal memuat alerts", err);
+      }
+    };
+    loadAlerts();
+    // Optional: add interval for polling if MQTT is not pushing
+    const interval = setInterval(loadAlerts, 10000);
+    return () => clearInterval(interval);
+  }, []);
   const openAlerts = alerts.filter((a) => a.status === "open");
   const openCount = openAlerts.length;
 
-  const acknowledge = (id) => {
+  const acknowledge = async (id) => {
     if (!canAck) return;
-    setAlerts((current) =>
-      current.map((alert) =>
-        alert.id === id
-          ? { ...alert, status: "acknowledged", acknowledgedBy: ROLES[role].short }
-          : alert
-      )
-    );
-    publish(MQTT_TOPICS.alertAck, id);
+    try {
+      await fetchApi(`/api/alerts/${id}/read`, { method: "PUT" });
+      setAlerts((current) =>
+        current.map((alert) =>
+          alert.id === id
+            ? { ...alert, status: "acknowledged", acknowledgedBy: ROLES[role].short }
+            : alert
+        )
+      );
+      publish(MQTT_TOPICS.alertAck, id);
+    } catch (err) {
+      console.error("Gagal acknowledge alert", err);
+    }
   };
 
   return (

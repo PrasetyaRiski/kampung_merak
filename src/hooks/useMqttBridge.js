@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import mqtt from "mqtt";
 import { MQTT_TOPICS, SUBSCRIBE_TOPICS, DEFAULT_TREND, makeId, nowTime, normalizeStatus } from "../data/constants.js";
+import { fetchApi } from "../utils/api.js";
 
 export function useMqttBridge() {
-  const mqttUrl = import.meta.env.VITE_MQTT_URL || "wss://broker.emqx.io:8084/mqtt";
-  const username = import.meta.env.VITE_MQTT_USERNAME || undefined;
-  const password = import.meta.env.VITE_MQTT_PASSWORD || undefined;
+  const [mqttConfig, setMqttConfig] = useState({
+    url: import.meta.env.VITE_MQTT_URL || "wss://broker.emqx.io:8084/mqtt",
+    username: import.meta.env.VITE_MQTT_USERNAME || undefined,
+    password: import.meta.env.VITE_MQTT_PASSWORD || undefined,
+  });
   const [clientId] = useState(
     () => `kampung-merak-inkubator-${Math.random().toString(16).slice(2, 10)}`
   );
@@ -41,13 +44,29 @@ export function useMqttBridge() {
   }, []);
 
   useEffect(() => {
-    setConnection((current) => ({ ...current, status: "connecting", error: "" }));
-    pushLog("MQTT", `Membuka koneksi ke ${mqttUrl}`);
+    let mounted = true;
+    fetchApi("/api/incubator/settings").then(settings => {
+      if (mounted) {
+        setMqttConfig({
+          url: settings.mqtt_url || import.meta.env.VITE_MQTT_URL || "wss://broker.emqx.io:8084/mqtt",
+          username: settings.mqtt_username || import.meta.env.VITE_MQTT_USERNAME || undefined,
+          password: settings.mqtt_password || import.meta.env.VITE_MQTT_PASSWORD || undefined,
+        });
+      }
+    }).catch(err => {
+      console.warn("Failed fetching MQTT config from API, using .env fallback:", err);
+    });
+    return () => { mounted = false; };
+  }, []);
 
-    const client = mqtt.connect(mqttUrl, {
+  useEffect(() => {
+    setConnection((current) => ({ ...current, status: "connecting", error: "" }));
+    pushLog("MQTT", `Membuka koneksi ke ${mqttConfig.url}`);
+
+    const client = mqtt.connect(mqttConfig.url, {
       clientId,
-      username,
-      password,
+      username: mqttConfig.username,
+      password: mqttConfig.password,
       clean: true,
       keepalive: 30,
       connectTimeout: 10000,
@@ -123,7 +142,7 @@ export function useMqttBridge() {
       client.end(true);
       clientRef.current = null;
     };
-  }, [clientId, mqttUrl, password, pushLog, username]);
+  }, [clientId, mqttConfig.url, mqttConfig.password, pushLog, mqttConfig.username]);
 
   const publish = useCallback(
     (topic, payload) => {
@@ -144,5 +163,5 @@ export function useMqttBridge() {
     [pushLog]
   );
 
-  return { mqttUrl, clientId, connection, telemetry, temperatureTrend, humidityTrend, logs, publish, pushLog };
+  return { mqttUrl: mqttConfig.url, clientId, connection, telemetry, temperatureTrend, humidityTrend, logs, publish, pushLog };
 }

@@ -10,13 +10,16 @@ const menuGroups = [
       { id: "dashboard", label: "Dashboard", subtitle: "Monitoring & performa", icon: "dashboard" },
       { id: "kamera", label: "Kamera CCTV", subtitle: "Live stream Bardi", icon: "videocam" },
       { id: "telur", label: "Data Telur", subtitle: "Slot dan status", icon: "egg_alt" },
+      { id: "indukan", label: "Data Indukan", subtitle: "Silsilah & breeding", icon: "pets" },
+      { id: "anakan", label: "Data Anakan", subtitle: "Hasil penetasan", icon: "child_care" },
       { id: "katalog", label: "Katalog Telur", subtitle: "Paket siap adopsi", icon: "shopping_bag" },
     ],
   },
   {
     label: "Sistem & Akses",
     items: [
-      { id: "penjualan", label: "Penjualan & Kas", subtitle: "Transaksi & keuangan", icon: "payments" },
+      { id: "penjualan", label: "Penjualan Telur", subtitle: "Transaksi penjualan", icon: "shopping_cart" },
+      { id: "finance", label: "Arus Kas Keuangan", subtitle: "Pemasukan & pengeluaran", icon: "account_balance_wallet" },
       { id: "histori", label: "Histori Sensor", subtitle: "Log telemetri", icon: "monitoring" },
       { id: "pengaturan", label: "Pengaturan", subtitle: "MQTT, threshold", icon: "settings" },
       { id: "akun", label: "Akun Pengguna", subtitle: "Admin saja", icon: "manage_accounts" },

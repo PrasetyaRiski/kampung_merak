@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
 import PageHeader from "../components/PageHeader.jsx";
 import RoleNotice, { AccessDenied } from "../components/RoleNotice.jsx";
 import SectionCard from "../components/SectionCard.jsx";
 import ConnectionPanel from "../components/ConnectionPanel.jsx";
+import { fetchApi } from "../utils/api.js";
 import { ROLES, VARIETAS } from "../data/constants.js";
 
 export default function SettingsPage({ role, activeVariety, setActiveVariety, mqttUrl, clientId, connection, cctvUrl, setCctvUrl }) {
@@ -10,6 +12,47 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
   }
 
   const configurationLocked = !ROLES[role].canConfigure;
+  
+  const [apiSettings, setApiSettings] = useState(null);
+  const [mqttConfig, setMqttConfig] = useState({ url: "", username: "", password: "" });
+  const [isSavingMqtt, setIsSavingMqtt] = useState(false);
+
+  useEffect(() => {
+    fetchApi("/api/incubator/settings").then(data => {
+      setApiSettings(data);
+      setMqttConfig({
+        url: data.mqtt_url || "",
+        username: data.mqtt_username || "",
+        password: data.mqtt_password || "",
+      });
+    }).catch(err => console.error("Gagal memuat pengaturan:", err));
+  }, []);
+
+  const handleSaveMqtt = async () => {
+    if (!apiSettings) return;
+    setIsSavingMqtt(true);
+    try {
+      const payload = {
+        ...apiSettings,
+        mqtt_url: mqttConfig.url || null,
+        mqtt_username: mqttConfig.username || null,
+        mqtt_password: mqttConfig.password || null
+      };
+      delete payload.id;
+      delete payload.updated_by;
+      delete payload.updated_at;
+      
+      await fetchApi("/api/incubator/settings", {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+      alert("Konfigurasi MQTT berhasil disimpan. Harap refresh halaman untuk menerapkan jika berubah.");
+    } catch (err) {
+      alert("Gagal menyimpan konfigurasi MQTT (Mungkin backend belum update?): " + err.message);
+    } finally {
+      setIsSavingMqtt(false);
+    }
+  };
 
   return (
     <div className="page-content space-y-6">
@@ -21,56 +64,7 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
 
       <RoleNotice role={role} />
 
-      <SectionCard title="Profil Inkubasi Aktif">
-        <div className="mb-4">
-          <p className="font-body text-sm text-ink-secondary mb-3">
-            Pilih varietas merak yang sedang diinkubasi. Mengubah profil akan menyesuaikan
-            warna dashboard dan parameter referensi.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {Object.entries(VARIETAS).map(([key, item]) => {
-              const active = activeVariety === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  disabled={configurationLocked}
-                  onClick={() => setActiveVariety(key)}
-                  className={`relative overflow-hidden rounded-xl border p-4 text-left transition-all duration-200 hover:shadow-sm disabled:cursor-not-allowed ${
-                    active
-                      ? "border-teal-iridescence bg-surface shadow-sm ring-1 ring-teal-iridescence/20"
-                      : "border-alpine-high bg-surface hover:border-teal-iridescence/40 opacity-80 disabled:opacity-50"
-                  }`}
-                  style={{ minWidth: "240px" }}
-                >
-                  <div className="relative z-10 flex flex-col gap-1">
-                    <span
-                      className="font-mono text-[10px] font-bold uppercase tracking-[0.14em]"
-                      style={{ color: active ? item.accent : "var(--ink-secondary)" }}
-                    >
-                      {item.batch}
-                    </span>
-                    <span className="font-display text-lg font-bold text-ink-primary">
-                      {item.label}
-                    </span>
-                  </div>
-                  {active && (
-                    <div
-                      className="absolute -right-4 -top-4 h-16 w-16 rounded-full opacity-20"
-                      style={{ backgroundColor: item.accent }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          {configurationLocked && (
-            <p className="mt-3 font-body text-xs text-status-dangerText">
-              * Hanya Admin yang dapat mengubah profil inkubasi.
-            </p>
-          )}
-        </div>
-      </SectionCard>
+
 
       <SectionCard title="Informasi Aplikasi">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -90,6 +84,61 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
       </SectionCard>
 
       <ConnectionPanel mqttUrl={mqttUrl} clientId={clientId} connection={connection} />
+
+      {/* Konfigurasi MQTT API Dinamis */}
+      <SectionCard title="Konfigurasi Broker MQTT">
+        <div className="space-y-4">
+          <p className="font-body text-sm text-ink-secondary leading-relaxed mb-4">
+            Pengaturan server MQTT secara dinamis tanpa harus mengubah <code className="bg-alpine-low px-1 rounded text-ink-primary">.env</code>.
+            (Pastikan developer backend sudah menambahkan kolom <code className="bg-alpine-low px-1 rounded text-ink-primary">mqtt_url</code>, dll di database).
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">WebSocket URL</label>
+              <input
+                type="text"
+                value={mqttConfig.url}
+                onChange={(e) => setMqttConfig({ ...mqttConfig, url: e.target.value })}
+                disabled={configurationLocked}
+                placeholder="wss://broker.emqx.io:8084/mqtt"
+                className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Username</label>
+              <input
+                type="text"
+                value={mqttConfig.username}
+                onChange={(e) => setMqttConfig({ ...mqttConfig, username: e.target.value })}
+                disabled={configurationLocked}
+                placeholder="(Opsional)"
+                className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Password</label>
+              <input
+                type="password"
+                value={mqttConfig.password}
+                onChange={(e) => setMqttConfig({ ...mqttConfig, password: e.target.value })}
+                disabled={configurationLocked}
+                placeholder="(Opsional)"
+                className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+          </div>
+          <div className="pt-2 flex justify-end">
+            <button
+              type="button"
+              disabled={configurationLocked || isSavingMqtt}
+              onClick={handleSaveMqtt}
+              className="km-btn km-btn-primary px-6"
+            >
+              {isSavingMqtt ? "Menyimpan..." : "Simpan Pengaturan MQTT"}
+            </button>
+          </div>
+        </div>
+      </SectionCard>
 
       <SectionCard title="Konfigurasi Kamera CCTV & Gateway RTSP">
         <div className="space-y-4">
@@ -131,14 +180,7 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
               * Hanya Admin yang dapat mengubah alamat kamera.
             </p>
           )}
-          <div className="mt-4 p-4 rounded-xl border border-alpine-high bg-surface space-y-2">
-             <p className="font-bold text-xs uppercase text-ink-primary tracking-widest">Cara Mengaktifkan Gateway Python:</p>
-             <div className="font-mono text-xs text-ink-secondary space-y-1">
-               <div>1. Buka terminal di folder <span className="text-ink-primary">server/</span></div>
-               <div>2. Jalankan <span className="text-ink-primary bg-alpine-low px-1 rounded">pip install -r requirements.txt</span></div>
-               <div>3. Jalankan <span className="text-ink-primary bg-alpine-low px-1 rounded">python rtsp_gateway_example.py</span></div>
-             </div>
-          </div>
+
         </div>
       </SectionCard>
     </div>
