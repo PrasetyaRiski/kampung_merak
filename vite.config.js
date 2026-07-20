@@ -15,6 +15,10 @@ export default defineConfig({
         target: "https://api-merak.abdulrosyid.my.id",
         changeOrigin: true,
       },
+      "/video_feed": {
+        target: "http://127.0.0.1:5000",
+        changeOrigin: true,
+      },
     },
   },
 });
