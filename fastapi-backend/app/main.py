@@ -1,4 +1,6 @@
+import logging
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,6 +15,12 @@ from .models import IncubatorSettings, User
 from .routers import auth, breeders, eggs, chicks, incubator, sales, finance, dashboard, alerts, users
 from .auth import get_password_hash
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger("merak")
+
 load_dotenv()
 
 API_KEY_WEB = os.getenv("API_KEY_WEB", "dev-api-key-web")
@@ -21,7 +29,47 @@ VALID_API_KEYS = {API_KEY_WEB, API_KEY_ANDROID}
 
 limiter = Limiter(key_func=get_remote_address)
 
-app = FastAPI(title="Kampung Merak API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    db = next(get_db())
+    try:
+        settings = db.query(IncubatorSettings).first()
+        if settings is None:
+            default_settings = IncubatorSettings(
+                suhu_min=37.0,
+                suhu_max=38.0,
+                kelembapan_min=55.0,
+                kelembapan_max=65.0,
+                interval_rotasi_menit=240,
+            )
+            db.add(default_settings)
+            db.commit()
+
+        first_user = db.query(User).first()
+        if first_user is None:
+            admin_email = os.getenv("FIRST_ADMIN_EMAIL")
+            admin_password = os.getenv("FIRST_ADMIN_PASSWORD")
+            if admin_email and admin_password:
+                seed_user = User(
+                    id="USR-001",
+                    email=admin_email,
+                    hashed_password=get_password_hash(admin_password),
+                    nama="Admin Utama",
+                    role="pemilik",
+                )
+                db.add(seed_user)
+                db.commit()
+                logger.info("Seeded first admin user: %s", admin_email)
+    except Exception as e:
+        logger.exception("Startup seed failed: %s", e)
+    finally:
+        db.close()
+    yield
+
+
+app = FastAPI(title="Kampung Merak API", version="1.0.0", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -36,6 +84,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "type": type(exc).__name__},
+    )
 
 
 def custom_openapi():
@@ -82,43 +139,6 @@ async def api_key_middleware(request: Request, call_next):
             content={"detail": "X-API-Key tidak valid atau tidak disertakan"},
         )
     return await call_next(request)
-
-
-Base.metadata.create_all(bind=engine)
-
-
-@app.on_event("startup")
-def startup():
-    db = next(get_db())
-    try:
-        settings = db.query(IncubatorSettings).first()
-        if settings is None:
-            default_settings = IncubatorSettings(
-                suhu_min=37.0,
-                suhu_max=38.0,
-                kelembapan_min=55.0,
-                kelembapan_max=65.0,
-                interval_rotasi_menit=240,
-            )
-            db.add(default_settings)
-            db.commit()
-
-        first_user = db.query(User).first()
-        if first_user is None:
-            admin_email = os.getenv("FIRST_ADMIN_EMAIL")
-            admin_password = os.getenv("FIRST_ADMIN_PASSWORD")
-            if admin_email and admin_password:
-                seed_user = User(
-                    id="USR-001",
-                    email=admin_email,
-                    hashed_password=get_password_hash(admin_password),
-                    nama="Admin Utama",
-                    role="pemilik",
-                )
-                db.add(seed_user)
-                db.commit()
-    finally:
-        db.close()
 
 
 app.include_router(auth.router)
