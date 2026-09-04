@@ -30,15 +30,19 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
     setIsCheckingApi(true);
     try {
       const startTime = performance.now();
-      const res = await fetchApi("/");
+      await fetchApi("/api/incubator/settings");
       const latency = Math.round(performance.now() - startTime);
       setApiStatus({
         status: "online",
-        message: typeof res === "object" ? (res.message || JSON.stringify(res)) : res,
+        host: "api-merak.abdulrosyid.my.id",
         latency
       });
     } catch (err) {
-      setApiStatus({ status: "offline", message: err.message });
+      setApiStatus({
+        status: "offline",
+        host: "api-merak.abdulrosyid.my.id",
+        error: err.message
+      });
     } finally {
       setIsCheckingApi(false);
     }
@@ -98,7 +102,7 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
 
 
       <SectionCard title="Informasi Aplikasi">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-alpine-high p-4 bg-alpine-low">
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ink-outline">Versi Aplikasi</p>
             <p className="mt-1 font-mono text-sm font-semibold text-ink-primary">v1.2.0-stable</p>
@@ -108,35 +112,37 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
             <p className="mt-1 font-mono text-sm font-semibold text-ink-primary">React 19 + Vite</p>
           </div>
           <div className="rounded-xl border border-alpine-high p-4 bg-alpine-low">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ink-outline">Koneksi</p>
-            <p className="mt-1 font-mono text-sm font-semibold text-ink-primary">MQTT via WebSocket (EMQX)</p>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ink-outline">Koneksi IoT</p>
+            <p className="mt-1 font-mono text-sm font-semibold text-ink-primary">MQTT (EMQX Cloud)</p>
           </div>
-          <div className="rounded-xl border border-alpine-high p-4 bg-alpine-low sm:col-span-2 lg:col-span-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className={`h-3 w-3 rounded-full ${apiStatus?.status === "online" ? "bg-status-success animate-pulse" : apiStatus ? "bg-status-dangerText" : "bg-ink-outline"}`} />
-              <div>
-                <p className="font-mono text-xs font-bold text-ink-primary flex items-center gap-2">
-                  API Backend Server (REST): {apiStatus?.status === "online" ? "Online & Siap" : apiStatus ? "Offline" : "Memeriksa..."}
-                  {apiStatus?.latency != null && (
-                    <span className="font-mono text-[10px] font-normal text-teal-iridescence px-1.5 py-0.5 rounded bg-teal-iridescence/10 border border-teal-iridescence/20">
-                      {apiStatus.latency} ms
-                    </span>
-                  )}
-                </p>
-                <p className="font-body text-xs text-ink-secondary mt-0.5">
-                  {apiStatus?.message || "Memeriksa status root endpoint (GET /)..."}
-                </p>
+          <div className="rounded-xl border border-alpine-high p-4 bg-alpine-low flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ink-outline">Backend REST API</p>
+                <button
+                  onClick={checkApiHealth}
+                  disabled={isCheckingApi}
+                  className="p-1 rounded text-ink-outline hover:text-teal-iridescence hover:bg-alpine-high/50 transition-colors"
+                  title="Ping Server REST API"
+                >
+                  <Icon name="sync" className={`text-[14px] ${isCheckingApi ? "animate-spin text-teal-iridescence" : ""}`} />
+                </button>
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full ${apiStatus?.status === "online" ? "bg-status-success animate-pulse" : apiStatus ? "bg-status-dangerText" : "bg-ink-outline"}`} />
+                <span className="font-mono text-sm font-semibold text-ink-primary">
+                  {apiStatus?.status === "online" ? "Online & Siap" : apiStatus ? "Offline" : "Memeriksa..."}
+                </span>
+                {apiStatus?.latency != null && (
+                  <span className="font-mono text-[10px] font-bold text-teal-iridescence px-1.5 py-0.5 rounded bg-teal-iridescence/10 border border-teal-iridescence/20 ml-auto">
+                    {apiStatus.latency} ms
+                  </span>
+                )}
               </div>
             </div>
-            <button
-              onClick={checkApiHealth}
-              disabled={isCheckingApi}
-              className="km-btn km-btn-secondary km-btn-sm"
-              title="Ping Ulang API Server (GET /)"
-            >
-              <Icon name="sync" className={`text-[16px] ${isCheckingApi ? "animate-spin" : ""}`} />
-              {isCheckingApi ? "Memeriksa..." : "Ping Server"}
-            </button>
+            <p className="mt-1.5 font-mono text-[11px] text-ink-outline truncate" title={apiStatus?.host || "api-merak.abdulrosyid.my.id"}>
+              {apiStatus?.host || "api-merak.abdulrosyid.my.id"}
+            </p>
           </div>
         </div>
       </SectionCard>
