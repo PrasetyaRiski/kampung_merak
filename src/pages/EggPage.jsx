@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "../components/PageHeader.jsx";
 import RoleNotice, { AccessDenied } from "../components/RoleNotice.jsx";
 import SectionCard from "../components/SectionCard.jsx";
@@ -8,79 +8,154 @@ import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import Icon from "../components/Icon.jsx";
 import { ROLES, makeId } from "../data/constants.js";
+import { fetchApi } from "../utils/api.js";
 
-export default function EggPage({ role, eggs, setEggs }) {
-  const [formData, setFormData] = useState({
-    slot: "",
-    tanggalBertelur: "",
-    tanggalMasuk: "",
-    estimasiMenetas: "",
-    fertilitas: "belum dicek",
-    akhir: "proses",
-    varietas: "Merak Hijau",
-    indukJantanId: "",
-    indukBetinaId: "",
-    catatan: "",
-  });
+const EMPTY_FORM = {
+  slot: "",
+  tanggalMasuk: "",
+  fertilitas: "Belum dicek",
+  akhir: "Proses",
+  induk_jantan_id: "",
+  induk_betina_id: "",
+  catatan: "",
+};
 
+export default function EggPage({ role }) {
+  const [eggs, setEggs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const [editingId, setEditingId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const canEdit = ROLES[role].canEditEggs;
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!canEdit) return;
-
-    if (editingId) {
-      setEggs((curr) => curr.map((egg) => (egg.id === editingId ? { ...egg, ...formData } : egg)));
-      setEditingId(null);
-    } else {
-      setEggs((curr) => [{ id: makeId("EGG"), ...formData }, ...curr]);
-    }
-
-    setFormData({
-      slot: "",
-      tanggalBertelur: "",
-      tanggalMasuk: "",
-      estimasiMenetas: "",
-      fertilitas: "belum dicek",
-      akhir: "proses",
-      varietas: "Merak Hijau",
-      indukJantanId: "",
-      indukBetinaId: "",
-      catatan: "",
-    });
-  };
-
-  const handleEdit = (egg) => {
-    if (!canEdit) return;
-    setFormData(egg);
-    setEditingId(egg.id);
-  };
-
-  const handleDelete = () => {
-    if (!canEdit || !deleteConfirm) return;
-    setEggs((curr) => curr.filter((egg) => egg.id !== deleteConfirm));
-    setDeleteConfirm(null);
-  };
 
   if (!ROLES[role].allowed.includes("telur")) {
     return <AccessDenied role={role} feature="Manajemen Data Telur" />;
   }
+
+  useEffect(() => {
+    loadEggs();
+  }, []);
+
+  const loadEggs = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchApi("/api/eggs");
+      setEggs(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch (err) {
+      setError("Gagal memuat data telur: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!canEdit) return;
+    setIsSaving(true);
+
+    try {
+      if (editingId) {
+        const payload = {
+          ...formData,
+          id: editingId,
+          slot: parseInt(formData.slot, 10),
+          induk_jantan_id: formData.induk_jantan_id || null,
+          induk_betina_id: formData.induk_betina_id || null,
+          catatan: formData.catatan || null,
+        };
+        const updated = await fetchApi(`/api/eggs/${editingId}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+        setEggs((curr) => curr.map((egg) => (egg.id === editingId ? updated : egg)));
+        setEditingId(null);
+      } else {
+        const newId = makeId("EGG");
+        const payload = {
+          ...formData,
+          id: newId,
+          slot: parseInt(formData.slot, 10),
+          induk_jantan_id: formData.induk_jantan_id || null,
+          induk_betina_id: formData.induk_betina_id || null,
+          catatan: formData.catatan || null,
+        };
+        const created = await fetchApi("/api/eggs", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        setEggs((curr) => [created, ...curr]);
+      }
+      setFormData({ ...EMPTY_FORM });
+    } catch (err) {
+      alert("Gagal menyimpan data: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEdit = (egg) => {
+    if (!canEdit) return;
+    setFormData({
+      slot: egg.slot?.toString() || "",
+      tanggalMasuk: egg.tanggalMasuk || "",
+      fertilitas: egg.fertilitas || "Belum dicek",
+      akhir: egg.akhir || "Proses",
+      induk_jantan_id: egg.induk_jantan_id || "",
+      induk_betina_id: egg.induk_betina_id || "",
+      catatan: egg.catatan || "",
+    });
+    setEditingId(egg.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setFormData({ ...EMPTY_FORM });
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
+    setIsDeleting(true);
+    try {
+      await fetchApi(`/api/eggs/${deleteConfirm.id}`, { method: "DELETE" });
+      setEggs((curr) => curr.filter((egg) => egg.id !== deleteConfirm.id));
+      setDeleteConfirm(null);
+    } catch (err) {
+      alert("Gagal menghapus data: " + err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="page-content space-y-6">
       <PageHeader
         eyebrow="Manajemen Data"
         title="Data Telur Inkubator"
-        description="Kelola slot nampan, status fertilitas hasil candling, dan status akhir penetasan."
+        description="Kelola slot nampan, status fertilitas hasil candling, dan status akhir penetasan. Terhubung langsung ke database."
       />
 
       <RoleNotice role={role} />
 
+      {error && (
+        <div className="flex items-center gap-3 rounded-xl border border-status-dangerText/30 bg-status-dangerBg px-4 py-3">
+          <Icon name="error" className="text-[18px] text-status-dangerText shrink-0" />
+          <p className="font-body text-sm text-status-dangerText">{error}</p>
+          <button onClick={loadEggs} className="ml-auto km-btn km-btn-sm km-btn-secondary">Coba Lagi</button>
+        </div>
+      )}
+
       {canEdit && (
-        <SectionCard title={editingId ? "Edit Data Telur" : "Tambah Data Telur"}>
+        <SectionCard title={editingId ? `Edit Data Telur: ${editingId}` : "Tambah Data Telur"}>
           <form onSubmit={handleSubmit} className="space-y-5">
             <FormGrid cols={3}>
               <FormField label="Slot Nampan (1-50)" htmlFor="slot" required>
@@ -91,44 +166,8 @@ export default function EggPage({ role, eggs, setEggs }) {
                   max="50"
                   required
                   value={formData.slot}
-                  onChange={(e) => setFormData({ ...formData, slot: e.target.value })}
+                  onChange={(e) => handleChange("slot", e.target.value)}
                   className="km-input font-mono"
-                />
-              </FormField>
-              <FormField label="Varietas" htmlFor="varietas" required>
-                <select
-                  id="varietas"
-                  required
-                  value={formData.varietas}
-                  onChange={(e) => setFormData({ ...formData, varietas: e.target.value })}
-                  className="km-input"
-                >
-                  <option value="Merak Hijau">Merak Hijau (Pavo muticus)</option>
-                  <option value="Merak Biru">Merak Biru (Pavo cristatus)</option>
-                </select>
-              </FormField>
-              <FormField label="Fertilitas" htmlFor="fertilitas" required>
-                <select
-                  id="fertilitas"
-                  required
-                  value={formData.fertilitas}
-                  onChange={(e) => setFormData({ ...formData, fertilitas: e.target.value })}
-                  className="km-input"
-                >
-                  <option value="belum dicek">Belum Dicek</option>
-                  <option value="fertil">Fertil</option>
-                  <option value="infertil">Infertil / Kosong</option>
-                </select>
-              </FormField>
-              
-              <FormField label="Tgl Bertelur" htmlFor="tanggalBertelur" required>
-                <input
-                  id="tanggalBertelur"
-                  type="date"
-                  required
-                  value={formData.tanggalBertelur}
-                  onChange={(e) => setFormData({ ...formData, tanggalBertelur: e.target.value })}
-                  className="km-input font-mono text-sm"
                 />
               </FormField>
               <FormField label="Tgl Masuk Inkubator" htmlFor="tanggalMasuk" required>
@@ -137,36 +176,40 @@ export default function EggPage({ role, eggs, setEggs }) {
                   type="date"
                   required
                   value={formData.tanggalMasuk}
-                  onChange={(e) => setFormData({ ...formData, tanggalMasuk: e.target.value })}
+                  onChange={(e) => handleChange("tanggalMasuk", e.target.value)}
                   className="km-input font-mono text-sm"
                 />
               </FormField>
-              <FormField label="Estimasi Menetas" htmlFor="estimasiMenetas">
+              <FormField label="Fertilitas" htmlFor="fertilitas" required>
+                <select
+                  id="fertilitas"
+                  required
+                  value={formData.fertilitas}
+                  onChange={(e) => handleChange("fertilitas", e.target.value)}
+                  className="km-input"
+                >
+                  <option value="Belum dicek">Belum Dicek</option>
+                  <option value="Fertil">Fertil</option>
+                  <option value="Infertil">Infertil / Kosong</option>
+                </select>
+              </FormField>
+
+              <FormField label="ID Induk Jantan" htmlFor="induk_jantan_id">
                 <input
-                  id="estimasiMenetas"
-                  type="date"
-                  value={formData.estimasiMenetas}
-                  onChange={(e) => setFormData({ ...formData, estimasiMenetas: e.target.value })}
-                  className="km-input font-mono text-sm"
+                  id="induk_jantan_id"
+                  value={formData.induk_jantan_id}
+                  onChange={(e) => handleChange("induk_jantan_id", e.target.value)}
+                  className="km-input font-mono text-sm uppercase"
+                  placeholder="Contoh: MALE-01"
                 />
               </FormField>
-              
-              <FormField label="ID Induk Jantan" htmlFor="indukJantanId">
+              <FormField label="ID Induk Betina" htmlFor="induk_betina_id">
                 <input
-                  id="indukJantanId"
-                  value={formData.indukJantanId}
-                  onChange={(e) => setFormData({ ...formData, indukJantanId: e.target.value })}
+                  id="induk_betina_id"
+                  value={formData.induk_betina_id}
+                  onChange={(e) => handleChange("induk_betina_id", e.target.value)}
                   className="km-input font-mono text-sm uppercase"
-                  placeholder="Opsional"
-                />
-              </FormField>
-              <FormField label="ID Induk Betina" htmlFor="indukBetinaId">
-                <input
-                  id="indukBetinaId"
-                  value={formData.indukBetinaId}
-                  onChange={(e) => setFormData({ ...formData, indukBetinaId: e.target.value })}
-                  className="km-input font-mono text-sm uppercase"
-                  placeholder="Opsional"
+                  placeholder="Contoh: FEMALE-01"
                 />
               </FormField>
               <FormField label="Status Akhir" htmlFor="akhir" required>
@@ -174,13 +217,13 @@ export default function EggPage({ role, eggs, setEggs }) {
                   id="akhir"
                   required
                   value={formData.akhir}
-                  onChange={(e) => setFormData({ ...formData, akhir: e.target.value })}
+                  onChange={(e) => handleChange("akhir", e.target.value)}
                   className="km-input"
                 >
-                  <option value="proses">Dalam Proses</option>
-                  <option value="menetas">Berhasil Menetas</option>
-                  <option value="gagal_tetas">Gagal Menetas</option>
-                  <option value="dibuang">Dibuang (Infertil)</option>
+                  <option value="Proses">Dalam Proses</option>
+                  <option value="Menetas">Berhasil Menetas</option>
+                  <option value="Gagal Tetas">Gagal Menetas</option>
+                  <option value="Dibuang">Dibuang (Infertil)</option>
                 </select>
               </FormField>
             </FormGrid>
@@ -189,36 +232,18 @@ export default function EggPage({ role, eggs, setEggs }) {
               <input
                 id="catatan"
                 value={formData.catatan}
-                onChange={(e) => setFormData({ ...formData, catatan: e.target.value })}
+                onChange={(e) => handleChange("catatan", e.target.value)}
                 className="km-input"
                 placeholder="Misal: Posisi retak sedikit, dll"
               />
             </FormField>
 
             <div className="flex gap-3 pt-2">
-              <button type="submit" className="km-btn km-btn-primary">
-                {editingId ? "Simpan Perubahan" : "Tambah Data"}
+              <button type="submit" disabled={isSaving} className="km-btn km-btn-primary">
+                {isSaving ? "Menyimpan..." : editingId ? "Simpan Perubahan" : "Tambah Data"}
               </button>
               {editingId && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingId(null);
-                    setFormData({
-                      slot: "",
-                      tanggalBertelur: "",
-                      tanggalMasuk: "",
-                      estimasiMenetas: "",
-                      fertilitas: "belum dicek",
-                      akhir: "proses",
-                      varietas: "Merak Hijau",
-                      indukJantanId: "",
-                      indukBetinaId: "",
-                      catatan: "",
-                    });
-                  }}
-                  className="km-btn km-btn-secondary"
-                >
+                <button type="button" onClick={handleCancelEdit} className="km-btn km-btn-secondary">
                   Batal Edit
                 </button>
               )}
@@ -227,17 +252,28 @@ export default function EggPage({ role, eggs, setEggs }) {
         </SectionCard>
       )}
 
-      <SectionCard title="Daftar Telur Terdaftar" noPadding>
-        {eggs.length === 0 ? (
-          <EmptyState title="Belum ada data telur" />
+      <SectionCard title={`Daftar Telur Terdaftar ${eggs.length > 0 ? `(${eggs.length})` : ""}`} noPadding>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="flex items-center gap-3 text-ink-secondary">
+              <Icon name="hourglass_top" className="text-[20px] animate-spin" />
+              <span className="font-body text-sm">Memuat data dari server...</span>
+            </div>
+          </div>
+        ) : eggs.length === 0 ? (
+          <EmptyState
+            icon="egg_alt"
+            title="Belum ada data telur"
+            desc="Tambahkan data telur menggunakan form di atas."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="km-table min-w-[800px]">
               <thead>
                 <tr>
                   <th>ID TELUR / SLOT</th>
-                  <th>VARIETAS</th>
-                  <th>TIMELINE</th>
+                  <th>INDUK</th>
+                  <th>TGL MASUK</th>
                   <th>FERTILITAS</th>
                   <th>STATUS AKHIR</th>
                   {canEdit && <th className="text-right">AKSI</th>}
@@ -250,12 +286,12 @@ export default function EggPage({ role, eggs, setEggs }) {
                       <p className="font-mono text-sm font-bold text-ink-primary">{egg.id}</p>
                       <p className="font-mono text-xs text-ink-secondary">Slot: {egg.slot}</p>
                     </td>
-                    <td className="font-body font-medium">{egg.varietas}</td>
                     <td>
-                      <p className="font-mono text-xs">Masuk: {egg.tanggalMasuk}</p>
-                      <p className="font-mono text-xs text-ink-secondary mt-0.5">
-                        Menetas: {egg.estimasiMenetas || "-"}
-                      </p>
+                      <p className="font-mono text-xs text-ink-primary">♂ {egg.induk_jantan_id || "—"}</p>
+                      <p className="font-mono text-xs text-ink-secondary mt-0.5">♀ {egg.induk_betina_id || "—"}</p>
+                    </td>
+                    <td>
+                      <p className="font-mono text-xs">{egg.tanggalMasuk || "—"}</p>
                     </td>
                     <td>
                       <StatusBadge
@@ -266,7 +302,7 @@ export default function EggPage({ role, eggs, setEggs }) {
                     </td>
                     <td>
                       <StatusBadge
-                        label={egg.akhir.replace("_", " ")}
+                        label={egg.akhir?.replace(/_/g, " ")}
                         variant={getEggStatusVariant(egg.akhir)}
                         showIcon={false}
                         className="capitalize"
@@ -284,7 +320,7 @@ export default function EggPage({ role, eggs, setEggs }) {
                           </button>
                           <button
                             title="Hapus"
-                            onClick={() => setDeleteConfirm(egg.id)}
+                            onClick={() => setDeleteConfirm(egg)}
                             className="km-btn km-btn-icon km-btn-danger h-8 w-8 !min-w-0 !p-0"
                           >
                             <Icon name="delete" className="text-[16px]" />
@@ -303,10 +339,11 @@ export default function EggPage({ role, eggs, setEggs }) {
       <ConfirmDialog
         open={!!deleteConfirm}
         title="Hapus Data Telur"
-        description={`Apakah Anda yakin ingin menghapus data telur ID ${deleteConfirm}? Data yang dihapus tidak dapat dikembalikan.`}
+        description={`Apakah Anda yakin ingin menghapus data telur ID ${deleteConfirm?.id}? Data yang dihapus tidak dapat dikembalikan.`}
         confirmLabel="Hapus Data"
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirm(null)}
+        loading={isDeleting}
       />
     </div>
   );

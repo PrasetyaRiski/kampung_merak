@@ -197,6 +197,29 @@ export default function App() {
     }
   }, []);
 
+  // Validate JWT token and restore session on mount
+  useEffect(() => {
+    const token = (() => {
+      try { return localStorage.getItem("jwt_token"); } catch { return null; }
+    })();
+    if (!token) return;
+
+    fetchApi("/auth/me").then((user) => {
+      if (user && user.role) {
+        let mappedRole = "viewer";
+        if (user.role === "pemilik" || user.role === "admin") mappedRole = "admin";
+        else if (user.role === "staff" || user.role === "operator") mappedRole = "operator";
+        setRole(mappedRole);
+        console.log("Sesi dipulihkan:", user.email, "as", mappedRole);
+      }
+    }).catch(() => {
+      // Token kadaluarsa atau tidak valid, hapus
+      localStorage.removeItem("jwt_token");
+      localStorage.removeItem("user_info");
+      setRole("viewer");
+    });
+  }, []);
+
   // Fetch initial data from API if configured
   useEffect(() => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -204,7 +227,6 @@ export default function App() {
 
     console.log("Memuat data dari API untuk inisialisasi state...");
     Promise.allSettled([
-      fetchApi('/api/eggs').then(data => setEggsState(data)).catch(err => console.warn("Gagal memuat telur:", err)),
       fetchApi('/api/breeders').then(data => setPeafowl(data)).catch(err => console.warn("Gagal memuat indukan:", err)),
       fetchApi('/api/sales').then(data => setSalesState(data)).catch(err => console.warn("Gagal memuat penjualan:", err)),
       fetchApi('/api/finance').then(data => setFinanceState(data)).catch(err => console.warn("Gagal memuat finance:", err)),
@@ -245,18 +267,33 @@ export default function App() {
     const now = Date.now();
     if (now - lastSavedTelemetryRef.current >= 60000) {
       lastSavedTelemetryRef.current = now;
-      
-      const logData = {
-        timestamp: new Date().toISOString(),
-        temperature: parseFloat(telemetry.temp),
-        humidity: parseFloat(telemetry.humidity)
-      };
 
+      const nowIso = new Date().toISOString();
+      const temp = parseFloat(telemetry.temp);
+      const hum = parseFloat(telemetry.humidity);
+      
+      // Simpan log telemetri
+      const logData = { timestamp: nowIso, temperature: temp, humidity: hum };
       fetchApi(`/api/incubator/telemetry-logs`, {
         method: "POST",
         body: JSON.stringify(logData),
       }).catch((err) => {
         console.error("Gagal menyimpan log telemetri ke database:", err);
+      });
+
+      // Sinkronisasi status inkubator terkini
+      const lampuStatus = temp >= 37.0 && temp <= 38.5 ? "ON" : "OFF";
+      const statusData = {
+        suhu_sekarang: temp,
+        kelembapan_sekarang: hum,
+        lampu_status: lampuStatus,
+        terakhir_rotasi: null
+      };
+      fetchApi(`/api/incubator/status`, {
+        method: "POST",
+        body: JSON.stringify(statusData),
+      }).catch((err) => {
+        console.error("Gagal menyimpan status inkubator ke database:", err);
       });
     }
   }, [telemetry]);
@@ -328,7 +365,7 @@ export default function App() {
       case "kamera":
         return <CctvPage {...props} />;
       case "telur":
-        return <EggPage {...props} eggs={eggs} setEggs={setEggs} />;
+        return <EggPage {...props} />;
       case "katalog":
         return <KatalogPage {...props} onPageChange={handlePageChange} />;
       case "indukan":
@@ -434,9 +471,17 @@ export default function App() {
             let mappedRole = "viewer";
             if (newRole === "pemilik" || newRole === "admin") mappedRole = "admin";
             else if (newRole === "staff" || newRole === "operator") mappedRole = "operator";
-            
+
             setRole(mappedRole);
             setSidebarOpen(false);
+
+            // Reload protected data setelah login
+            fetchApi('/api/finance')
+              .then(data => setFinanceState(data))
+              .catch(err => console.warn("Gagal reload finance setelah login:", err));
+            fetchApi('/api/sales')
+              .then(data => setSalesState(data))
+              .catch(err => console.warn("Gagal reload sales setelah login:", err));
           }}
         />
       )}

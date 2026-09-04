@@ -27,6 +27,7 @@ export default function DashboardPage({
   logs
 }) {
   const [summary, setSummary] = useState(null);
+  const [financeSummary, setFinanceSummary] = useState(null);
 
   useEffect(() => {
     const loadSummary = async () => {
@@ -37,7 +38,17 @@ export default function DashboardPage({
         console.error("Gagal memuat dashboard summary", err);
       }
     };
+    const loadFinanceSummary = async () => {
+      try {
+        const data = await fetchApi('/api/finance/summary');
+        setFinanceSummary(data);
+      } catch (err) {
+        // Finance summary may require login, silently fail
+        console.warn("Finance summary tidak tersedia (login diperlukan?):", err.message);
+      }
+    };
     loadSummary();
+    loadFinanceSummary();
   }, []);
 
   const isTempIdeal = telemetry.temperature >= 37.5 && telemetry.temperature <= 38.0;
@@ -108,6 +119,39 @@ export default function DashboardPage({
         </div>
       )}
 
+      {financeSummary && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="km-card p-5 bg-surface border-l-4 border-l-teal-iridescence">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-teal-iridescence">Total Pemasukan</p>
+            <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">
+              Rp {(financeSummary.total_pemasukan ?? 0).toLocaleString("id-ID")}
+            </p>
+            <p className="mt-0.5 font-body text-xs text-ink-secondary">Dari semua penjualan</p>
+          </div>
+          <div className="km-card p-5 bg-surface border-l-4 border-l-status-dangerText">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-status-dangerText">Total Pengeluaran</p>
+            <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">
+              Rp {(financeSummary.total_pengeluaran ?? 0).toLocaleString("id-ID")}
+            </p>
+            <p className="mt-0.5 font-body text-xs text-ink-secondary">Total biaya operasional</p>
+          </div>
+          <div className={`km-card p-5 bg-surface border-l-4 ${
+            (financeSummary.laba_bersih ?? 0) >= 0
+              ? "border-l-status-success"
+              : "border-l-status-dangerText"
+          }`}>
+            <p className={`font-mono text-[11px] font-bold uppercase tracking-[0.14em] ${
+              (financeSummary.laba_bersih ?? 0) >= 0 ? "text-status-success" : "text-status-dangerText"
+            }`}>Laba Bersih</p>
+            <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">
+              Rp {Math.abs(financeSummary.laba_bersih ?? 0).toLocaleString("id-ID")}
+            </p>
+            <p className="mt-0.5 font-body text-xs text-ink-secondary">
+              {(financeSummary.laba_bersih ?? 0) >= 0 ? "Surplus" : "Defisit"}
+            </p>
+          </div>
+        </div>
+      )}
 
       <IncubationTrendChart trend={temperatureTrend} />
       

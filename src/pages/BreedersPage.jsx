@@ -70,6 +70,9 @@ export default function BreedersPage({ role }) {
   const [isSaving, setIsSaving] = useState(false);
   const [lineageData, setLineageData] = useState(null);
   const [isLoadingLineage, setIsLoadingLineage] = useState(false);
+  const [compareIds, setCompareIds] = useState([]);
+  const [compareData, setCompareData] = useState(null);
+  const [isLoadingCompare, setIsLoadingCompare] = useState(false);
 
   const canEdit = ROLES[role]?.canManagePeafowl;
 
@@ -193,6 +196,28 @@ export default function BreedersPage({ role }) {
     }
   };
 
+  const toggleCompareId = (id) => {
+    setCompareIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleCompare = async () => {
+    if (compareIds.length < 2) {
+      alert("Pilih minimal 2 indukan untuk dibandingkan.");
+      return;
+    }
+    setIsLoadingCompare(true);
+    try {
+      const data = await fetchApi(`/api/breeders/compare?ids=${compareIds.join(",")}`);
+      setCompareData(data);
+    } catch (err) {
+      alert("Gagal memuat data perbandingan: " + err.message);
+    } finally {
+      setIsLoadingCompare(false);
+    }
+  };
+
   return (
     <div className="page-content space-y-6">
       <PageHeader
@@ -307,7 +332,26 @@ export default function BreedersPage({ role }) {
       )}
 
       {/* ── Tabel Data ── */}
-      <SectionCard title={`Daftar Indukan (${breeders.length})`} noPadding>
+      <SectionCard
+        title={`Daftar Indukan (${breeders.length})`}
+        noPadding
+        action={
+          compareIds.length >= 2 ? (
+            <button
+              onClick={handleCompare}
+              disabled={isLoadingCompare}
+              className="km-btn km-btn-primary km-btn-sm gap-1.5"
+            >
+              <Icon name="compare" className="text-[16px]" />
+              {isLoadingCompare ? "Memuat..." : `Bandingkan (${compareIds.length})`}
+            </button>
+          ) : compareIds.length === 1 ? (
+            <span className="font-body text-xs text-ink-secondary">Pilih 1 lagi untuk membandingkan</span>
+          ) : (
+            <span className="font-body text-xs text-ink-secondary">Centang indukan untuk membandingkan</span>
+          )
+        }
+      >
         <div className="overflow-x-auto">
           {loading ? (
             <div className="p-8 text-center text-ink-outline">Memuat data indukan...</div>
@@ -316,9 +360,10 @@ export default function BreedersPage({ role }) {
           ) : breeders.length === 0 ? (
             <EmptyState icon="pets" title="Belum Ada Data Indukan" description="Tambahkan data indukan merak pertama Anda menggunakan form di atas." />
           ) : (
-            <table className="km-table min-w-[900px]">
+            <table className="km-table min-w-[950px]">
               <thead>
                 <tr>
+                  <th className="w-8"><Icon name="check_box" className="text-[16px] text-ink-outline" /></th>
                   <th className="w-12">FOTO</th>
                   <th>ID SILSILAH</th>
                   <th>NAMA</th>
@@ -332,7 +377,16 @@ export default function BreedersPage({ role }) {
               </thead>
               <tbody>
                 {breeders.map((b) => (
-                  <tr key={b.id}>
+                  <tr key={b.id} className={compareIds.includes(b.id) ? "bg-teal-iridescence/5" : ""}>
+                    <td className="py-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-teal-600 cursor-pointer"
+                        checked={compareIds.includes(b.id)}
+                        onChange={() => toggleCompareId(b.id)}
+                        title="Pilih untuk perbandingan"
+                      />
+                    </td>
                     <td className="py-2">
                       {b.foto_url ? (
                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-alpine-high bg-alpine-low shadow-sm">
@@ -507,6 +561,88 @@ export default function BreedersPage({ role }) {
                   </div>
                 </div>
               ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Compare Modal */}
+      {compareData && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-12 bg-black/50 backdrop-blur-sm overflow-y-auto" onClick={() => setCompareData(null)}>
+          <div className="w-full max-w-4xl km-card bg-surface border border-alpine-high shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-alpine-high flex items-center justify-between">
+              <div>
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-teal-iridescence">Komparasi Performa</p>
+                <h3 className="font-display text-xl font-bold text-ink-primary">Perbandingan Indukan</h3>
+              </div>
+              <button onClick={() => { setCompareData(null); setCompareIds([]); }} className="text-ink-secondary hover:text-ink-primary transition-colors">
+                <Icon name="close" className="text-[22px]" />
+              </button>
+            </div>
+            <div className="p-5 overflow-x-auto">
+              <table className="km-table min-w-[600px]">
+                <thead>
+                  <tr>
+                    <th>METRIK</th>
+                    {compareData.breeders?.map((b) => (
+                      <th key={b.id} className="text-center">
+                        <p className="font-mono text-xs font-bold text-ink-primary">{b.id}</p>
+                        <p className="font-body text-[10px] text-ink-secondary mt-0.5">{b.nama || "—"}</p>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="font-body text-sm font-semibold text-ink-secondary">Jenis Kelamin</td>
+                    {compareData.breeders?.map((b) => (
+                      <td key={b.id} className="text-center">
+                        <StatusBadge label={b.jenis_kelamin} variant={b.jenis_kelamin?.toLowerCase() === "jantan" ? "info" : "danger"} showIcon={false} />
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-body text-sm font-semibold text-ink-secondary">Generasi</td>
+                    {compareData.breeders?.map((b) => (
+                      <td key={b.id} className="text-center font-mono text-sm">{b.generasi}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-body text-sm font-semibold text-ink-secondary">Varian Warna</td>
+                    {compareData.breeders?.map((b) => (
+                      <td key={b.id} className="text-center font-body text-sm">{b.varian_warna}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-body text-sm font-semibold text-ink-secondary">Status</td>
+                    {compareData.breeders?.map((b) => (
+                      <td key={b.id} className="text-center">
+                        <StatusBadge label={b.status} variant={getStatusVariant(b.status)} showIcon={false} />
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-body text-sm font-semibold text-ink-secondary">Total Telur</td>
+                    {compareData.breeders?.map((b) => (
+                      <td key={b.id} className="text-center font-mono text-lg font-bold text-teal-iridescence">{b.total_telur ?? "—"}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-body text-sm font-semibold text-ink-secondary">% Telur Fertil</td>
+                    {compareData.breeders?.map((b) => (
+                      <td key={b.id} className="text-center font-mono text-lg font-bold text-status-success">
+                        {b.persentase_fertil != null ? `${parseFloat(b.persentase_fertil).toFixed(1)}%` : "—"}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-body text-sm font-semibold text-ink-secondary">Jumlah Anakan</td>
+                    {compareData.breeders?.map((b) => (
+                      <td key={b.id} className="text-center font-mono text-lg font-bold text-ink-primary">{b.jumlah_anakan ?? "—"}</td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

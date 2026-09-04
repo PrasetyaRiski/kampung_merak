@@ -14,43 +14,49 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
   const configurationLocked = !ROLES[role].canConfigure;
   
   const [apiSettings, setApiSettings] = useState(null);
-  const [mqttConfig, setMqttConfig] = useState({ url: "", username: "", password: "" });
-  const [isSavingMqtt, setIsSavingMqtt] = useState(false);
+  const [incubatorForm, setIncubatorForm] = useState({
+    suhu_min: 37.0,
+    suhu_max: 38.0,
+    kelembapan_min: 55.0,
+    kelembapan_max: 65.0,
+    interval_rotasi_menit: 240,
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   useEffect(() => {
     fetchApi("/api/incubator/settings").then(data => {
       setApiSettings(data);
-      setMqttConfig({
-        url: data.mqtt_url || "",
-        username: data.mqtt_username || "",
-        password: data.mqtt_password || "",
+      setIncubatorForm({
+        suhu_min: data.suhu_min ?? 37.0,
+        suhu_max: data.suhu_max ?? 38.0,
+        kelembapan_min: data.kelembapan_min ?? 55.0,
+        kelembapan_max: data.kelembapan_max ?? 65.0,
+        interval_rotasi_menit: data.interval_rotasi_menit ?? 240,
       });
-    }).catch(err => console.error("Gagal memuat pengaturan:", err));
+    }).catch(err => console.error("Gagal memuat pengaturan inkubator:", err));
   }, []);
 
-  const handleSaveMqtt = async () => {
-    if (!apiSettings) return;
-    setIsSavingMqtt(true);
+  const handleSaveIncubatorSettings = async () => {
+    if (configurationLocked) return;
+    setIsSavingSettings(true);
     try {
       const payload = {
-        ...apiSettings,
-        mqtt_url: mqttConfig.url || null,
-        mqtt_username: mqttConfig.username || null,
-        mqtt_password: mqttConfig.password || null
+        suhu_min: parseFloat(incubatorForm.suhu_min),
+        suhu_max: parseFloat(incubatorForm.suhu_max),
+        kelembapan_min: parseFloat(incubatorForm.kelembapan_min),
+        kelembapan_max: parseFloat(incubatorForm.kelembapan_max),
+        interval_rotasi_menit: parseInt(incubatorForm.interval_rotasi_menit, 10),
       };
-      delete payload.id;
-      delete payload.updated_by;
-      delete payload.updated_at;
-      
-      await fetchApi("/api/incubator/settings", {
+      const saved = await fetchApi("/api/incubator/settings", {
         method: "PUT",
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-      alert("Konfigurasi MQTT berhasil disimpan. Harap refresh halaman untuk menerapkan jika berubah.");
+      setApiSettings(saved);
+      alert("Pengaturan inkubator berhasil disimpan!");
     } catch (err) {
-      alert("Gagal menyimpan konfigurasi MQTT (Mungkin backend belum update?): " + err.message);
+      alert("Gagal menyimpan pengaturan: " + err.message);
     } finally {
-      setIsSavingMqtt(false);
+      setIsSavingSettings(false);
     }
   };
 
@@ -85,58 +91,96 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
 
       <ConnectionPanel mqttUrl={mqttUrl} clientId={clientId} connection={connection} />
 
-      {/* Konfigurasi MQTT API Dinamis */}
-      <SectionCard title="Konfigurasi Broker MQTT">
+      {/* Parameter Inkubator */}
+      <SectionCard title="Parameter Mesin Inkubator">
         <div className="space-y-4">
-          <p className="font-body text-sm text-ink-secondary leading-relaxed mb-4">
-            Pengaturan server MQTT secara dinamis tanpa harus mengubah <code className="bg-alpine-low px-1 rounded text-ink-primary">.env</code>.
-            (Pastikan developer backend sudah menambahkan kolom <code className="bg-alpine-low px-1 rounded text-ink-primary">mqtt_url</code>, dll di database).
+          <p className="font-body text-sm text-ink-secondary leading-relaxed">
+            Atur batas suhu dan kelembaban ideal untuk inkubasi telur merak. Nilai ini digunakan sebagai referensi alarm dan monitoring.
           </p>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">WebSocket URL</label>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Suhu Minimum (°C)</label>
               <input
-                type="text"
-                value={mqttConfig.url}
-                onChange={(e) => setMqttConfig({ ...mqttConfig, url: e.target.value })}
+                type="number"
+                step="0.1"
+                min="30" max="45"
+                value={incubatorForm.suhu_min}
+                onChange={(e) => setIncubatorForm({ ...incubatorForm, suhu_min: e.target.value })}
                 disabled={configurationLocked}
-                placeholder="wss://broker.emqx.io:8084/mqtt"
                 className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Username</label>
+              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Suhu Maksimum (°C)</label>
               <input
-                type="text"
-                value={mqttConfig.username}
-                onChange={(e) => setMqttConfig({ ...mqttConfig, username: e.target.value })}
+                type="number"
+                step="0.1"
+                min="30" max="45"
+                value={incubatorForm.suhu_max}
+                onChange={(e) => setIncubatorForm({ ...incubatorForm, suhu_max: e.target.value })}
                 disabled={configurationLocked}
-                placeholder="(Opsional)"
                 className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Password</label>
+              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Kelembaban Minimum (%)</label>
               <input
-                type="password"
-                value={mqttConfig.password}
-                onChange={(e) => setMqttConfig({ ...mqttConfig, password: e.target.value })}
+                type="number"
+                step="0.5"
+                min="20" max="100"
+                value={incubatorForm.kelembapan_min}
+                onChange={(e) => setIncubatorForm({ ...incubatorForm, kelembapan_min: e.target.value })}
                 disabled={configurationLocked}
-                placeholder="(Opsional)"
                 className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
+            <div>
+              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Kelembaban Maksimum (%)</label>
+              <input
+                type="number"
+                step="0.5"
+                min="20" max="100"
+                value={incubatorForm.kelembapan_max}
+                onChange={(e) => setIncubatorForm({ ...incubatorForm, kelembapan_max: e.target.value })}
+                disabled={configurationLocked}
+                className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Interval Rotasi (menit)</label>
+              <input
+                type="number"
+                step="1"
+                min="30" max="720"
+                value={incubatorForm.interval_rotasi_menit}
+                onChange={(e) => setIncubatorForm({ ...incubatorForm, interval_rotasi_menit: e.target.value })}
+                disabled={configurationLocked}
+                className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            {apiSettings && (
+              <div className="flex items-end pb-0.5">
+                <div className="rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-xs font-mono text-ink-secondary w-full">
+                  <span className="font-bold text-ink-outline">Terakhir diubah oleh:</span><br />
+                  <span className="text-ink-primary">{apiSettings.updated_by || "—"}</span>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="pt-2 flex justify-end">
-            <button
-              type="button"
-              disabled={configurationLocked || isSavingMqtt}
-              onClick={handleSaveMqtt}
-              className="km-btn km-btn-primary px-6"
-            >
-              {isSavingMqtt ? "Menyimpan..." : "Simpan Pengaturan MQTT"}
-            </button>
-          </div>
+          {configurationLocked ? (
+            <p className="font-body text-xs text-status-dangerText">* Hanya Admin yang dapat mengubah parameter inkubator.</p>
+          ) : (
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                disabled={isSavingSettings}
+                onClick={handleSaveIncubatorSettings}
+                className="km-btn km-btn-primary px-6"
+              >
+                {isSavingSettings ? "Menyimpan..." : "Simpan Parameter Inkubator"}
+              </button>
+            </div>
+          )}
         </div>
       </SectionCard>
 

@@ -53,6 +53,17 @@ export default function AlertPanel({ role, publish }) {
     }
   };
 
+  const deleteAlert = async (id) => {
+    if (!canAck) return;
+    try {
+      await fetchApi(`/api/alerts/${id}`, { method: "DELETE" });
+      setAlerts((current) => current.filter((alert) => alert.id !== id));
+    } catch (err) {
+      console.error("Gagal hapus alert", err);
+    }
+  };
+
+
   return (
     <section className="km-card p-4 sm:p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
@@ -138,7 +149,17 @@ export default function AlertPanel({ role, publish }) {
                       Acknowledge
                     </button>
                   )}
-                </div>
+                  {canAck && (
+                    <button
+                      onClick={() => deleteAlert(alert.id)}
+                      className="km-btn km-btn-danger km-btn-sm mt-1"
+                      title="Hapus alert"
+                    >
+                      <Icon name="delete" className="text-[14px]" />
+                      Hapus
+                    </button>
+                  )}
+                 </div>
               </div>
             </div>
           ))
