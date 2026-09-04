@@ -5,6 +5,7 @@ import SectionCard from "../components/SectionCard.jsx";
 import ConnectionPanel from "../components/ConnectionPanel.jsx";
 import { fetchApi } from "../utils/api.js";
 import { ROLES, VARIETAS } from "../data/constants.js";
+import Icon from "../components/Icon.jsx";
 
 export default function SettingsPage({ role, activeVariety, setActiveVariety, mqttUrl, clientId, connection, cctvUrl, setCctvUrl }) {
   if (!ROLES[role].allowed.includes("pengaturan")) {
