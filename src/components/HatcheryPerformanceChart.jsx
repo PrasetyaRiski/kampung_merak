@@ -5,13 +5,21 @@ export default function HatcheryPerformanceChart({ eggs }) {
   // Hitung statistik performa penangkaran secara real-time
   const stats = useMemo(() => {
     const total = eggs.length;
-    const menetas = eggs.filter((e) => e.akhir === "menetas").length;
-    const gagal = eggs.filter((e) => e.akhir === "gagal_tetas" || e.fertilitas === "infertil").length;
-    const proses = eggs.filter((e) => e.akhir === "proses" && e.fertilitas !== "infertil").length;
+    const menetas = eggs.filter((e) => (e.akhir || "").toLowerCase() === "menetas").length;
+    const gagal = eggs.filter((e) => {
+      const a = (e.akhir || "").toLowerCase();
+      const f = (e.fertilitas || "").toLowerCase();
+      return a === "gagal_tetas" || a === "gagal" || f === "infertil";
+    }).length;
+    const proses = eggs.filter((e) => {
+      const a = (e.akhir || "").toLowerCase();
+      const f = (e.fertilitas || "").toLowerCase();
+      return (a === "proses" || !a) && f !== "infertil";
+    }).length;
     
     // Hitung persentase keberhasilan (Hatch Rate) dari telur yang sudah selesai diinkubasi
     const selesai = menetas + gagal;
-    const successRate = selesai > 0 ? (menetas / selesai) * 100 : 0;
+    const successRate = selesai > 0 ? Math.round((menetas / selesai) * 100) : 0;
 
     return { total, menetas, gagal, proses, successRate };
   }, [eggs]);

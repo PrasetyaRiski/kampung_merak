@@ -152,39 +152,46 @@ export default function DashboardPage({
         </div>
       )}
 
-      {financeSummary && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="km-card p-5 bg-surface border-l-4 border-l-teal-iridescence">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-teal-iridescence">Total Pemasukan</p>
-            <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">
-              Rp {(financeSummary.total_pemasukan ?? 0).toLocaleString("id-ID")}
-            </p>
-            <p className="mt-0.5 font-body text-xs text-ink-secondary">Dari semua penjualan</p>
+      {financeSummary && (() => {
+        const totalPemasukan = financeSummary.total_pemasukan ?? 0;
+        const totalPengeluaran = financeSummary.total_pengeluaran ?? 0;
+        const labaBersih = (financeSummary.laba_bersih != null && financeSummary.laba_bersih !== 0)
+          ? financeSummary.laba_bersih
+          : (totalPemasukan - totalPengeluaran);
+        const isSurplus = labaBersih >= 0;
+
+        return (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="km-card p-5 bg-surface border-l-4 border-l-teal-iridescence">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-teal-iridescence">Total Pemasukan</p>
+              <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">
+                Rp {totalPemasukan.toLocaleString("id-ID")}
+              </p>
+              <p className="mt-0.5 font-body text-xs text-ink-secondary">Dari semua penjualan</p>
+            </div>
+            <div className="km-card p-5 bg-surface border-l-4 border-l-status-dangerText">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-status-dangerText">Total Pengeluaran</p>
+              <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">
+                Rp {totalPengeluaran.toLocaleString("id-ID")}
+              </p>
+              <p className="mt-0.5 font-body text-xs text-ink-secondary">Total biaya operasional</p>
+            </div>
+            <div className={`km-card p-5 bg-surface border-l-4 ${
+              isSurplus ? "border-l-status-success" : "border-l-status-dangerText"
+            }`}>
+              <p className={`font-mono text-[11px] font-bold uppercase tracking-[0.14em] ${
+                isSurplus ? "text-status-success" : "text-status-dangerText"
+              }`}>Laba Bersih</p>
+              <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">
+                Rp {Math.abs(labaBersih).toLocaleString("id-ID")}
+              </p>
+              <p className="mt-0.5 font-body text-xs text-ink-secondary">
+                {isSurplus ? "Surplus" : "Defisit"}
+              </p>
+            </div>
           </div>
-          <div className="km-card p-5 bg-surface border-l-4 border-l-status-dangerText">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-status-dangerText">Total Pengeluaran</p>
-            <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">
-              Rp {(financeSummary.total_pengeluaran ?? 0).toLocaleString("id-ID")}
-            </p>
-            <p className="mt-0.5 font-body text-xs text-ink-secondary">Total biaya operasional</p>
-          </div>
-          <div className={`km-card p-5 bg-surface border-l-4 ${
-            (financeSummary.laba_bersih ?? 0) >= 0
-              ? "border-l-status-success"
-              : "border-l-status-dangerText"
-          }`}>
-            <p className={`font-mono text-[11px] font-bold uppercase tracking-[0.14em] ${
-              (financeSummary.laba_bersih ?? 0) >= 0 ? "text-status-success" : "text-status-dangerText"
-            }`}>Laba Bersih</p>
-            <p className="mt-1 font-display text-2xl font-extrabold text-ink-primary">
-              Rp {Math.abs(financeSummary.laba_bersih ?? 0).toLocaleString("id-ID")}
-            </p>
-            <p className="mt-0.5 font-body text-xs text-ink-secondary">
-              {(financeSummary.laba_bersih ?? 0) >= 0 ? "Surplus" : "Defisit"}
-            </p>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       <IncubationTrendChart
         trend={temperatureTrend}
