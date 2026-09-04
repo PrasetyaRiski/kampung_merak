@@ -358,6 +358,7 @@ export default function App() {
             mqttUrl={mqttUrl}
             clientId={clientId}
             temperatureTrend={temperatureTrend}
+            humidityTrend={humidityTrend}
             activeVariety={activeVariety}
             eggs={eggs}
             logs={logs}

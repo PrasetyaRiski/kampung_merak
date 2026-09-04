@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import mqtt from "mqtt";
-import { MQTT_TOPICS, SUBSCRIBE_TOPICS, DEFAULT_TREND, makeId, nowTime, normalizeStatus } from "../data/constants.js";
+import { MQTT_TOPICS, SUBSCRIBE_TOPICS, DEFAULT_TREND, DEFAULT_HUMIDITY_TREND, makeId, nowTime, normalizeStatus } from "../data/constants.js";
 import { fetchApi } from "../utils/api.js";
 
 export function useMqttBridge() {
@@ -27,7 +27,7 @@ export function useMqttBridge() {
     statusMist: "UNKNOWN",
   });
   const [temperatureTrend, setTemperatureTrend] = useState(DEFAULT_TREND);
-  const [humidityTrend, setHumidityTrend] = useState(Array.from({ length: 24 }, (_, index) => 46 + (index % 4)));
+  const [humidityTrend, setHumidityTrend] = useState(DEFAULT_HUMIDITY_TREND);
   const [logs, setLogs] = useState([
     {
       id: makeId("LOG"),

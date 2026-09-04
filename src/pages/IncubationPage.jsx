@@ -172,7 +172,11 @@ export default function IncubationPage({
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="space-y-6">
-          <IncubationTrendChart trend={temperatureTrend} humidityTrend={humidityTrend} />
+          <IncubationTrendChart
+            trend={temperatureTrend}
+            humidityTrend={humidityTrend}
+            isConnected={connection.status === "connected" && telemetry.temperature != null}
+          />
 
           <SectionCard title="Unit IoT Aktif" noPadding>
             <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">

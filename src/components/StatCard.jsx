@@ -27,6 +27,20 @@ export default function StatCard({ icon, title, value, unit, target, note, state
       iconBg: "bg-status-warningBg",
       iconColor: "text-status-warningText",
     },
+    warning: {
+      badge: "km-badge km-badge-warning",
+      badgeLabel: "Pantau",
+      badgeIcon: "warning",
+      iconBg: "bg-status-warningBg",
+      iconColor: "text-status-warningText",
+    },
+    standby: {
+      badge: "km-badge km-badge-neutral",
+      badgeLabel: "Standby",
+      badgeIcon: "hourglass_top",
+      iconBg: "bg-alpine-mid",
+      iconColor: "text-ink-secondary",
+    },
     danger: {
       badge: "km-badge km-badge-danger",
       badgeLabel: "Kritis",

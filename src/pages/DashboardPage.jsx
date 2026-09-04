@@ -20,6 +20,7 @@ export default function DashboardPage({
   mqttUrl,
   clientId,
   temperatureTrend,
+  humidityTrend,
   activeVariety,
   setActiveVariety,
   publish,
@@ -49,8 +50,42 @@ export default function DashboardPage({
 
   const financeSummary = summary?.finance_summary;
 
-  const isTempIdeal = telemetry.temperature >= 37.5 && telemetry.temperature <= 38.0;
-  const isHumIdeal = telemetry.humidity >= 45 && telemetry.humidity <= 50;
+  const isMqttConnected = connection.status === "connected" && telemetry.temperature != null;
+  const currentTemp = telemetry.temperature ?? (incubatorStatus?.suhu_sekarang != null ? Number(incubatorStatus.suhu_sekarang) : null);
+  const currentHum = telemetry.humidity ?? (incubatorStatus?.kelembapan_sekarang != null ? Number(incubatorStatus.kelembapan_sekarang) : null);
+
+  const isTempIdeal = currentTemp != null && currentTemp >= 37.5 && currentTemp <= 38.0;
+  const isHumIdeal = currentHum != null && currentHum >= 45 && currentHum <= 50;
+
+  const tempState = currentTemp == null
+    ? "waiting"
+    : isTempIdeal
+      ? "ideal"
+      : (currentTemp < 36.5 || currentTemp > 39.0) ? "danger" : "warning";
+
+  const humState = currentHum == null
+    ? "waiting"
+    : isHumIdeal
+      ? "ideal"
+      : (currentHum < 40 || currentHum > 60) ? "danger" : "warning";
+
+  const tempNote = telemetry.temperature != null
+    ? "Topik: iot/telemetry/temperature (Live MQTT)"
+    : incubatorStatus?.suhu_sekarang != null
+      ? "Data Terakhir Database (REST API)"
+      : "Menunggu data sensor MQTT...";
+
+  const humNote = telemetry.humidity != null
+    ? "Topik: iot/telemetry/humidity (Live MQTT)"
+    : incubatorStatus?.kelembapan_sekarang != null
+      ? "Data Terakhir Database (REST API)"
+      : "Menunggu data sensor MQTT...";
+
+  const tempUpdatedAt = connection.lastTelemetryAt
+    ? new Date(connection.lastTelemetryAt).toLocaleTimeString("id-ID")
+    : incubatorStatus?.terakhir_rotasi
+      ? "DB: " + new Date(incubatorStatus.terakhir_rotasi).toLocaleTimeString("id-ID")
+      : null;
 
   return (
     <div className="page-content space-y-6">
@@ -83,22 +118,22 @@ export default function DashboardPage({
         <StatCard
           icon="thermostat"
           title="Suhu Inkubator"
-          value={formatNumber(telemetry.temperature)}
+          value={formatNumber(currentTemp)}
           unit="°C"
           target="Ideal: 37.5 - 38.0 °C"
-          note="Topik: iot/telemetry/temperature"
-          state={isTempIdeal ? "ideal" : "danger"}
-          updatedAt={connection.lastTelemetryAt ? new Date(connection.lastTelemetryAt).toLocaleTimeString("id-ID") : null}
+          note={tempNote}
+          state={tempState}
+          updatedAt={tempUpdatedAt}
         />
         <StatCard
           icon="water_drop"
           title="Kelembaban"
-          value={formatNumber(telemetry.humidity, 0)}
+          value={formatNumber(currentHum, currentHum != null && currentHum % 1 !== 0 ? 1 : 0)}
           unit="%"
           target="Ideal: 45 - 50 %"
-          note="Topik: iot/telemetry/humidity"
-          state={isHumIdeal ? "ideal" : "warning"}
-          updatedAt={connection.lastTelemetryAt ? new Date(connection.lastTelemetryAt).toLocaleTimeString("id-ID") : null}
+          note={humNote}
+          state={humState}
+          updatedAt={tempUpdatedAt}
         />
       </div>
 
@@ -151,7 +186,11 @@ export default function DashboardPage({
         </div>
       )}
 
-      <IncubationTrendChart trend={temperatureTrend} />
+      <IncubationTrendChart
+        trend={temperatureTrend}
+        humidityTrend={humidityTrend}
+        isConnected={isMqttConnected}
+      />
       
       {role === "admin" && <HatcheryPerformanceChart eggs={eggs} />}
       

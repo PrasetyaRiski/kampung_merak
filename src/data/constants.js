@@ -158,6 +158,11 @@ export const DEFAULT_TREND = [
   37.8, 37.7, 37.6, 37.8, 37.9, 37.8, 37.7, 37.8,
 ];
 
+export const DEFAULT_HUMIDITY_TREND = [
+  47.5, 48.0, 48.2, 47.8, 47.0, 47.5, 48.1, 48.6, 48.2, 47.9, 48.4, 47.8,
+  48.0, 48.5, 49.0, 48.3, 47.7, 48.2, 48.0, 47.6, 48.1, 48.5, 48.2, 48.0,
+];
+
 export const INITIAL_EGGS = [
   {
     id: "EGG-2026-001", incubatorId: "INK-A", slot: 1, tanggalBertelur: "2026-06-01",

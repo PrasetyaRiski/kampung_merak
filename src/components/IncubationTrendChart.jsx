@@ -1,13 +1,14 @@
-import { DEFAULT_TREND } from "../data/constants.js";
+import { DEFAULT_TREND, DEFAULT_HUMIDITY_TREND } from "../data/constants.js";
 
-function renderCompactChart({ title, data, idealRange, unit, color, gradientId }) {
+function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, color, gradientId, isLive }) {
   const width = 640;
   const height = 180;
   const padding = { top: 16, right: 10, bottom: 28, left: 8 };
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
   const safeData = (data || []).filter((value) => typeof value === "number" && !Number.isNaN(value));
-  const series = safeData.length > 1 ? safeData.slice(-24) : DEFAULT_TREND;
+  const fallback = fallbackSeries || DEFAULT_TREND;
+  const series = safeData.length > 1 ? safeData.slice(-24) : fallback;
   const min = Math.min(...series, idealRange[0] - 0.5) - 0.1;
   const max = Math.max(...series, idealRange[1] + 0.5) + 0.1;
   const toX = (index) => padding.left + (index / (series.length - 1)) * chartW;
@@ -22,7 +23,18 @@ function renderCompactChart({ title, data, idealRange, unit, color, gradientId }
     <div className="rounded-2xl border border-alpine-high bg-alpine-low/80 p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ink-secondary">{title}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ink-secondary">{title}</p>
+            {isLive ? (
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                Live
+              </span>
+            ) : (
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                Standby
+              </span>
+            )}
+          </div>
           <p className="mt-1 font-display text-lg font-bold text-ink-primary">
             {lastValue?.toFixed(1)}{unit}
           </p>
@@ -67,20 +79,50 @@ function renderCompactChart({ title, data, idealRange, unit, color, gradientId }
   );
 }
 
-export default function IncubationTrendChart({ trend, humidityTrend }) {
+export default function IncubationTrendChart({ trend, humidityTrend, isConnected }) {
+  const isLive = Boolean(isConnected);
+
   return (
     <section className="km-card p-6">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-teal-iridescence">Tren Kondisi</p>
           <h2 className="mt-1 font-display text-xl font-extrabold text-ink-primary">Suhu & Kelembaban 24 Jam</h2>
-          <p className="mt-1 font-body text-xs text-ink-secondary">Visual real-time yang memudahkan melihat drift parameter inkubator.</p>
+          <p className="mt-1 font-body text-xs text-ink-secondary">Visual pemantauan parameter inkubator untuk mendeteksi drift fluktuasi.</p>
         </div>
-        <span className="km-badge km-badge-neutral font-mono text-[10px]">REAL-TIME</span>
+        {isLive ? (
+          <span className="km-badge km-badge-success font-mono text-[10px] flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            REAL-TIME MQTT
+          </span>
+        ) : (
+          <span className="km-badge km-badge-neutral font-mono text-[10px] flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-amber-400" />
+            STANDBY / BASELINE
+          </span>
+        )}
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
-        {renderCompactChart({ title: "Suhu", data: trend, idealRange: [37.5, 38.0], unit: "°C", color: "#006b58", gradientId: "tempTrend" })}
-        {renderCompactChart({ title: "Kelembaban", data: humidityTrend, idealRange: [45, 50], unit: "%", color: "#2563eb", gradientId: "humidityTrend" })}
+        {renderCompactChart({
+          title: "Suhu",
+          data: trend,
+          fallbackSeries: DEFAULT_TREND,
+          idealRange: [37.5, 38.0],
+          unit: "°C",
+          color: "#006b58",
+          gradientId: "tempTrend",
+          isLive,
+        })}
+        {renderCompactChart({
+          title: "Kelembaban",
+          data: humidityTrend,
+          fallbackSeries: DEFAULT_HUMIDITY_TREND,
+          idealRange: [45, 50],
+          unit: "%",
+          color: "#2563eb",
+          gradientId: "humidityTrend",
+          isLive,
+        })}
       </div>
     </section>
   );
