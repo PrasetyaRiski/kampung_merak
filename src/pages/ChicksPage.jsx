@@ -36,6 +36,8 @@ export default function ChicksPage({ role }) {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedChickDetail, setSelectedChickDetail] = useState(null);
+  const [isLoadingChickDetail, setIsLoadingChickDetail] = useState(false);
 
   const canEdit = ROLES[role]?.canManageChicks;
 
@@ -133,6 +135,18 @@ export default function ChicksPage({ role }) {
       alert("Gagal menghapus data: " + err.message);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleViewChickDetail = async (chickId) => {
+    setIsLoadingChickDetail(true);
+    try {
+      const data = await fetchApi(`/api/chicks/${chickId}`);
+      setSelectedChickDetail(data);
+    } catch (err) {
+      alert("Gagal memuat detail anakan: " + err.message);
+    } finally {
+      setIsLoadingChickDetail(false);
     }
   };
 
@@ -242,7 +256,7 @@ export default function ChicksPage({ role }) {
                   <th>BERAT</th>
                   <th>SKOR</th>
                   <th>STATUS</th>
-                  {canEdit && <th className="text-right">AKSI</th>}
+                  <th className="text-right">AKSI</th>
                 </tr>
               </thead>
               <tbody>
@@ -273,22 +287,31 @@ export default function ChicksPage({ role }) {
                       />
                     </td>
                     <td><StatusBadge label={c.status} variant={getChickStatusVariant(c.status)} showIcon={false} /></td>
-                    {canEdit && (
-                      <td className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <button className="km-btn km-btn-secondary km-btn-sm !px-2" onClick={() => handleEdit(c)} title="Edit">
-                            <Icon name="edit" className="text-[16px]" />
-                          </button>
-                          <button
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 dark:border-red-900/30 dark:bg-red-500/10 dark:hover:bg-red-500/20"
-                            onClick={() => setDeleteConfirm(c)}
-                            title="Hapus"
-                          >
-                            <Icon name="delete" className="text-[16px]" />
-                          </button>
-                        </div>
-                      </td>
-                    )}
+                    <td className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          className="km-btn km-btn-secondary km-btn-sm !px-2"
+                          onClick={() => handleViewChickDetail(c.id)}
+                          title="Lihat Detail Profil Anakan"
+                        >
+                          <Icon name="visibility" className="text-[16px]" />
+                        </button>
+                        {canEdit && (
+                          <>
+                            <button className="km-btn km-btn-secondary km-btn-sm !px-2" onClick={() => handleEdit(c)} title="Edit">
+                              <Icon name="edit" className="text-[16px]" />
+                            </button>
+                            <button
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 dark:border-red-900/30 dark:bg-red-500/10 dark:hover:bg-red-500/20"
+                              onClick={() => setDeleteConfirm(c)}
+                              title="Hapus"
+                            >
+                              <Icon name="delete" className="text-[16px]" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -308,6 +331,79 @@ export default function ChicksPage({ role }) {
           onCancel={() => setDeleteConfirm(null)}
           isDestructive={true}
         />
+      )}
+
+      {/* Modal Detail Anakan (GET /api/chicks/{chick_id}) */}
+      {selectedChickDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedChickDetail(null)}>
+          <div className="w-full max-w-md km-card bg-surface border border-alpine-high shadow-2xl p-6 relative select-text" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-alpine-high pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full overflow-hidden border border-alpine-high bg-alpine-low flex items-center justify-center">
+                  {selectedChickDetail.foto_url ? (
+                    <img src={selectedChickDetail.foto_url} alt={selectedChickDetail.id} className="h-full w-full object-cover" />
+                  ) : (
+                    <Icon name="child_care" className="text-[24px] text-ink-outline" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-ink-primary flex items-center gap-2">
+                    {selectedChickDetail.id}
+                    <StatusBadge label={selectedChickDetail.status} variant={getChickStatusVariant(selectedChickDetail.status)} showIcon={false} />
+                  </h3>
+                  <p className="font-mono text-xs text-ink-secondary">Telur Induk: {selectedChickDetail.egg_id}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedChickDetail(null)} className="p-1 rounded-lg text-ink-secondary hover:text-ink-primary hover:bg-alpine-low transition-colors">
+                <Icon name="close" className="text-[20px]" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="km-card p-3 bg-alpine-low border border-alpine-high text-center">
+                <p className="font-mono text-[10px] uppercase font-bold text-ink-outline">Berat Awal</p>
+                <p className="font-mono text-2xl font-extrabold text-ink-primary mt-1">{selectedChickDetail.berat_awal}g</p>
+              </div>
+              <div className="km-card p-3 bg-alpine-low border border-alpine-high text-center">
+                <p className="font-mono text-[10px] uppercase font-bold text-ink-outline">Skor Kesehatan</p>
+                <div className="mt-1">
+                  <StatusBadge
+                    label={selectedChickDetail.skor_kesehatan}
+                    variant={selectedChickDetail.skor_kesehatan === "Baik" ? "success" : selectedChickDetail.skor_kesehatan === "Sedang" ? "warning" : "danger"}
+                    showIcon={false}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 text-xs font-body divide-y divide-alpine-high">
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Tanggal Menetas:</span>
+                <span className="font-mono font-semibold text-ink-primary">{selectedChickDetail.tanggal_menetas}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Induk Jantan:</span>
+                <span className="font-mono font-semibold text-ink-primary">♂ {selectedChickDetail.induk_jantan_id || "—"}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Induk Betina:</span>
+                <span className="font-mono font-semibold text-ink-primary">♀ {selectedChickDetail.induk_betina_id || "—"}</span>
+              </div>
+              {selectedChickDetail.catatan && (
+                <div className="flex flex-col gap-1 pt-2">
+                  <span className="text-ink-secondary">Catatan:</span>
+                  <p className="font-body text-ink-primary bg-alpine-low p-2 rounded-lg border border-alpine-high">{selectedChickDetail.catatan}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button className="km-btn km-btn-secondary km-btn-sm" onClick={() => setSelectedChickDetail(null)}>
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

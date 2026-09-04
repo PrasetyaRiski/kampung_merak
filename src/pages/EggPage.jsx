@@ -29,6 +29,8 @@ export default function EggPage({ role }) {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedEggDetail, setSelectedEggDetail] = useState(null);
+  const [isLoadingEggDetail, setIsLoadingEggDetail] = useState(false);
 
   const canEdit = ROLES[role].canEditEggs;
 
@@ -133,6 +135,18 @@ export default function EggPage({ role }) {
       alert("Gagal menghapus data: " + err.message);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleViewEggDetail = async (eggId) => {
+    setIsLoadingEggDetail(true);
+    try {
+      const data = await fetchApi(`/api/eggs/${eggId}`);
+      setSelectedEggDetail(data);
+    } catch (err) {
+      alert("Gagal memuat detail telur: " + err.message);
+    } finally {
+      setIsLoadingEggDetail(false);
     }
   };
 
@@ -276,7 +290,7 @@ export default function EggPage({ role }) {
                   <th>TGL MASUK</th>
                   <th>FERTILITAS</th>
                   <th>STATUS AKHIR</th>
-                  {canEdit && <th className="text-right">AKSI</th>}
+                  <th className="text-right">AKSI</th>
                 </tr>
               </thead>
               <tbody>
@@ -308,26 +322,35 @@ export default function EggPage({ role }) {
                         className="capitalize"
                       />
                     </td>
-                    {canEdit && (
-                      <td className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <button
-                            title="Edit"
-                            onClick={() => handleEdit(egg)}
-                            className="km-btn km-btn-icon km-btn-secondary h-8 w-8 !min-w-0 !p-0"
-                          >
-                            <Icon name="edit" className="text-[16px]" />
-                          </button>
-                          <button
-                            title="Hapus"
-                            onClick={() => setDeleteConfirm(egg)}
-                            className="km-btn km-btn-icon km-btn-danger h-8 w-8 !min-w-0 !p-0"
-                          >
-                            <Icon name="delete" className="text-[16px]" />
-                          </button>
-                        </div>
-                      </td>
-                    )}
+                    <td className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          title="Lihat Detail Telur"
+                          onClick={() => handleViewEggDetail(egg.id)}
+                          className="km-btn km-btn-icon km-btn-secondary h-8 w-8 !min-w-0 !p-0"
+                        >
+                          <Icon name="visibility" className="text-[16px]" />
+                        </button>
+                        {canEdit && (
+                          <>
+                            <button
+                              title="Edit"
+                              onClick={() => handleEdit(egg)}
+                              className="km-btn km-btn-icon km-btn-secondary h-8 w-8 !min-w-0 !p-0"
+                            >
+                              <Icon name="edit" className="text-[16px]" />
+                            </button>
+                            <button
+                              title="Hapus"
+                              onClick={() => setDeleteConfirm(egg)}
+                              className="km-btn km-btn-icon km-btn-danger h-8 w-8 !min-w-0 !p-0"
+                            >
+                              <Icon name="delete" className="text-[16px]" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -345,6 +368,66 @@ export default function EggPage({ role }) {
         onCancel={() => setDeleteConfirm(null)}
         loading={isDeleting}
       />
+      {/* Modal Detail Telur (GET /api/eggs/{egg_id}) */}
+      {selectedEggDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedEggDetail(null)}>
+          <div className="w-full max-w-md km-card bg-surface border border-alpine-high shadow-2xl p-6 relative select-text" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-alpine-high pb-4 mb-4">
+              <div>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-teal-iridescence">Detail Inkubasi Telur</span>
+                <h3 className="font-display text-xl font-bold text-ink-primary mt-0.5">{selectedEggDetail.id}</h3>
+              </div>
+              <button onClick={() => setSelectedEggDetail(null)} className="p-1 rounded-lg text-ink-secondary hover:text-ink-primary hover:bg-alpine-low transition-colors">
+                <Icon name="close" className="text-[20px]" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="km-card p-3 bg-alpine-low border border-alpine-high text-center">
+                <p className="font-mono text-[10px] uppercase font-bold text-ink-outline">Slot Nampan</p>
+                <p className="font-mono text-2xl font-extrabold text-ink-primary mt-1">#{selectedEggDetail.slot}</p>
+              </div>
+              <div className="km-card p-3 bg-alpine-low border border-alpine-high text-center">
+                <p className="font-mono text-[10px] uppercase font-bold text-ink-outline">Fertilitas</p>
+                <div className="mt-1">
+                  <StatusBadge label={selectedEggDetail.fertilitas} variant={getFertilitasVariant(selectedEggDetail.fertilitas)} showIcon={false} />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 text-xs font-body divide-y divide-alpine-high">
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Induk Jantan:</span>
+                <span className="font-mono font-semibold text-ink-primary">♂ {selectedEggDetail.induk_jantan_id || "—"}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Induk Betina:</span>
+                <span className="font-mono font-semibold text-ink-primary">♀ {selectedEggDetail.induk_betina_id || "—"}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Tanggal Masuk:</span>
+                <span className="font-mono font-semibold text-ink-primary">{selectedEggDetail.tanggalMasuk}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Status Hasil:</span>
+                <span className="font-semibold text-ink-primary capitalize">{selectedEggDetail.akhir?.replace(/_/g, " ")}</span>
+              </div>
+              {selectedEggDetail.catatan && (
+                <div className="flex flex-col gap-1 pt-2">
+                  <span className="text-ink-secondary">Catatan:</span>
+                  <p className="font-body text-ink-primary bg-alpine-low p-2 rounded-lg border border-alpine-high">{selectedEggDetail.catatan}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button className="km-btn km-btn-secondary km-btn-sm" onClick={() => setSelectedEggDetail(null)}>
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

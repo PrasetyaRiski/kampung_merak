@@ -73,6 +73,8 @@ export default function BreedersPage({ role }) {
   const [compareIds, setCompareIds] = useState([]);
   const [compareData, setCompareData] = useState(null);
   const [isLoadingCompare, setIsLoadingCompare] = useState(false);
+  const [selectedBreederDetail, setSelectedBreederDetail] = useState(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   const canEdit = ROLES[role]?.canManagePeafowl;
 
@@ -215,6 +217,18 @@ export default function BreedersPage({ role }) {
       alert("Gagal memuat data perbandingan: " + err.message);
     } finally {
       setIsLoadingCompare(false);
+    }
+  };
+
+  const handleViewDetail = async (breederId) => {
+    setIsLoadingDetail(true);
+    try {
+      const data = await fetchApi(`/api/breeders/${breederId}`);
+      setSelectedBreederDetail(data);
+    } catch (err) {
+      alert("Gagal memuat detail indukan: " + err.message);
+    } finally {
+      setIsLoadingDetail(false);
     }
   };
 
@@ -416,6 +430,13 @@ export default function BreedersPage({ role }) {
                     <td><span className="text-xs text-ink-outline">{formatTimeAgo(b.created_at)}</span></td>
                     <td className="text-right">
                       <div className="flex justify-end gap-2">
+                        <button
+                          className="km-btn km-btn-secondary km-btn-sm !px-2"
+                          onClick={() => handleViewDetail(b.id)}
+                          title="Lihat Detail Profil & Performa"
+                        >
+                          <Icon name="visibility" className="text-[16px]" />
+                        </button>
                         <button
                           className="km-btn km-btn-secondary km-btn-sm !px-2"
                           onClick={() => handleViewLineage(b.id)}
@@ -643,6 +664,87 @@ export default function BreedersPage({ role }) {
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Detail Profil Indukan (GET /api/breeders/{breeder_id}) */}
+      {selectedBreederDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedBreederDetail(null)}>
+          <div className="w-full max-w-xl km-card bg-surface border border-alpine-high shadow-2xl p-6 relative select-text" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-alpine-high pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full overflow-hidden border border-alpine-high bg-alpine-low flex items-center justify-center">
+                  {selectedBreederDetail.foto_url ? (
+                    <img src={selectedBreederDetail.foto_url} alt={selectedBreederDetail.nama || selectedBreederDetail.id} className="h-full w-full object-cover" />
+                  ) : (
+                    <Icon name="pets" className="text-[24px] text-ink-outline" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-ink-primary flex items-center gap-2">
+                    {selectedBreederDetail.nama || selectedBreederDetail.id}
+                    <StatusBadge label={selectedBreederDetail.status} variant={getStatusVariant(selectedBreederDetail.status)} showIcon={false} />
+                  </h3>
+                  <p className="font-mono text-xs text-ink-secondary">ID: {selectedBreederDetail.id} • {selectedBreederDetail.jenis_kelamin}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedBreederDetail(null)} className="p-1 rounded-lg text-ink-secondary hover:text-ink-primary hover:bg-alpine-low transition-colors">
+                <Icon name="close" className="text-[20px]" />
+              </button>
+            </div>
+
+            {/* Performance Stats Cards */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="km-card p-3 bg-teal-iridescence/5 border border-teal-iridescence/20 text-center">
+                <p className="font-mono text-[10px] uppercase font-bold text-teal-iridescence">Total Telur</p>
+                <p className="font-mono text-xl font-extrabold text-ink-primary mt-0.5">{selectedBreederDetail.total_telur ?? 0}</p>
+              </div>
+              <div className="km-card p-3 bg-status-success/5 border border-status-success/20 text-center">
+                <p className="font-mono text-[10px] uppercase font-bold text-status-success">Fertil</p>
+                <p className="font-mono text-xl font-extrabold text-status-success mt-0.5">
+                  {selectedBreederDetail.persentase_fertil != null ? `${parseFloat(selectedBreederDetail.persentase_fertil).toFixed(0)}%` : "0%"}
+                </p>
+              </div>
+              <div className="km-card p-3 bg-alpine-low border border-alpine-high text-center">
+                <p className="font-mono text-[10px] uppercase font-bold text-ink-outline">Anakan</p>
+                <p className="font-mono text-xl font-extrabold text-ink-primary mt-0.5">{selectedBreederDetail.jumlah_anakan ?? 0}</p>
+              </div>
+            </div>
+
+            {/* Attributes Grid */}
+            <div className="space-y-2.5 text-xs font-body divide-y divide-alpine-high">
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Generasi:</span>
+                <span className="font-mono font-semibold text-ink-primary">{selectedBreederDetail.generasi}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Varian Warna:</span>
+                <span className="font-semibold text-ink-primary">{selectedBreederDetail.varian_warna}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Asal:</span>
+                <span className="font-semibold text-ink-primary">{selectedBreederDetail.asal}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Tanggal Lahir:</span>
+                <span className="font-mono font-semibold text-ink-primary">{selectedBreederDetail.tanggal_lahir || "—"}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Parent Jantan:</span>
+                <span className="font-mono font-semibold text-ink-primary">{selectedBreederDetail.parent_jantan_id || "— (F0/Wild)"}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Parent Betina:</span>
+                <span className="font-mono font-semibold text-ink-primary">{selectedBreederDetail.parent_betina_id || "— (F0/Wild)"}</span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button className="km-btn km-btn-secondary km-btn-sm" onClick={() => setSelectedBreederDetail(null)}>
+                Tutup
+              </button>
             </div>
           </div>
         </div>

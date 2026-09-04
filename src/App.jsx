@@ -230,6 +230,7 @@ export default function App() {
       fetchApi('/api/breeders').then(data => setPeafowl(data)).catch(err => console.warn("Gagal memuat indukan:", err)),
       fetchApi('/api/sales').then(data => setSalesState(data)).catch(err => console.warn("Gagal memuat penjualan:", err)),
       fetchApi('/api/finance').then(data => setFinanceState(data)).catch(err => console.warn("Gagal memuat finance:", err)),
+      fetchApi('/api/incubator/status').then(status => console.log("Status inkubator dari API:", status)).catch(err => console.warn("Gagal memuat status inkubator:", err)),
     ]);
   }, []);
 

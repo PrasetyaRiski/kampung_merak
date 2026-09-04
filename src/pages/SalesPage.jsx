@@ -8,6 +8,7 @@ import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import Icon from "../components/Icon.jsx";
 import { ROLES, makeId, formatCurrency } from "../data/constants.js";
+import { fetchApi } from "../utils/api.js";
 
 export default function SalesPage({ role, sales, setSales }) {
   const [formData, setFormData] = useState({
@@ -25,6 +26,7 @@ export default function SalesPage({ role, sales, setSales }) {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedCertificateId, setSelectedCertificateId] = useState(sales[0]?.id || "SALE-2026-001");
+  const [selectedSaleDetail, setSelectedSaleDetail] = useState(null);
 
   const canEdit = ROLES[role].canManageSales;
 
@@ -97,8 +99,18 @@ export default function SalesPage({ role, sales, setSales }) {
 
   const totalValuation = sales.reduce((sum, s) => sum + s.hargaSatuan * s.qty, 0);
 
+  const handleSelectCertificate = async (saleId) => {
+    setSelectedCertificateId(saleId);
+    try {
+      const data = await fetchApi(`/api/sales/${saleId}`);
+      setSelectedSaleDetail(data);
+    } catch (err) {
+      console.warn("Gagal memuat detail transaksi dari server:", err.message);
+    }
+  };
+
   // Find selected sale for certificate display
-  const certificateSale = sales.find((s) => s.id === selectedCertificateId) || sales[0];
+  const certificateSale = (selectedSaleDetail?.id === selectedCertificateId ? selectedSaleDetail : null) || sales.find((s) => s.id === selectedCertificateId) || sales[0];
 
   return (
     <div className="page-content space-y-8 select-none">
@@ -258,7 +270,7 @@ export default function SalesPage({ role, sales, setSales }) {
                       className={`cursor-pointer hover:bg-alpine-low/40 transition-colors ${
                         selectedCertificateId === sale.id ? "bg-teal-iridescence/[0.04] border-l-2 border-l-teal-500" : ""
                       }`}
-                      onClick={() => setSelectedCertificateId(sale.id)}
+                      onClick={() => handleSelectCertificate(sale.id)}
                     >
                       <td>
                         <span className="block font-mono text-xs font-bold text-ink-primary">{sale.id}</span>
@@ -282,7 +294,7 @@ export default function SalesPage({ role, sales, setSales }) {
                       <td className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-1.5">
                           <button
-                            onClick={() => setSelectedCertificateId(sale.id)}
+                            onClick={() => handleSelectCertificate(sale.id)}
                             className={`p-1.5 rounded-lg transition-colors ${
                               selectedCertificateId === sale.id
                                 ? "bg-teal-container text-teal-container-text"

@@ -8,6 +8,7 @@ import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import Icon from "../components/Icon.jsx";
 import { ROLES, makeId, formatCurrency } from "../data/constants.js";
+import { fetchApi } from "../utils/api.js";
 
 export default function FinancePage({ role, finance, setFinance }) {
   const [formData, setFormData] = useState({
@@ -21,6 +22,8 @@ export default function FinancePage({ role, finance, setFinance }) {
   const [editingId, setEditingId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedFinanceDetail, setSelectedFinanceDetail] = useState(null);
+  const [isLoadingFinanceDetail, setIsLoadingFinanceDetail] = useState(false);
 
   const canEdit = ROLES[role].canManageSales;
 
@@ -63,6 +66,18 @@ export default function FinancePage({ role, finance, setFinance }) {
     if (!canEdit || !deleteConfirm) return;
     setFinance((curr) => curr.filter((fin) => fin.id !== deleteConfirm));
     setDeleteConfirm(null);
+  };
+
+  const handleViewFinanceDetail = async (financeId) => {
+    setIsLoadingFinanceDetail(true);
+    try {
+      const data = await fetchApi(`/api/finance/${financeId}`);
+      setSelectedFinanceDetail(data);
+    } catch (err) {
+      alert("Gagal memuat detail transaksi: " + err.message);
+    } finally {
+      setIsLoadingFinanceDetail(false);
+    }
   };
 
   const totalPemasukan = finance
@@ -176,6 +191,13 @@ export default function FinancePage({ role, finance, setFinance }) {
                     </td>
                     <td className="text-right">
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleViewFinanceDetail(fin.id)}
+                          className="p-1.5 rounded-lg text-ink-outline hover:text-teal-iridescence hover:bg-teal-iridescence/10 transition-colors"
+                          title="Lihat Detail Transaksi"
+                        >
+                          <Icon name="visibility" className="text-[18px]" />
+                        </button>
                         {canEdit && (
                           <>
                             <button
@@ -316,6 +338,63 @@ export default function FinancePage({ role, finance, setFinance }) {
           confirmText="Ya, Hapus"
           cancelText="Batal"
         />
+      )}
+
+      {/* Modal Detail Transaksi Keuangan (GET /api/finance/{finance_id}) */}
+      {selectedFinanceDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedFinanceDetail(null)}>
+          <div className="w-full max-w-md km-card bg-surface border border-alpine-high shadow-2xl p-6 relative select-text" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-alpine-high pb-4 mb-4">
+              <div>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-teal-iridescence">Detail Pembukuan Kas</span>
+                <h3 className="font-display text-xl font-bold text-ink-primary mt-0.5">{selectedFinanceDetail.id}</h3>
+              </div>
+              <button onClick={() => setSelectedFinanceDetail(null)} className="p-1 rounded-lg text-ink-secondary hover:text-ink-primary hover:bg-alpine-low transition-colors">
+                <Icon name="close" className="text-[20px]" />
+              </button>
+            </div>
+
+            <div className={`p-4 rounded-xl border text-center mb-4 ${
+              selectedFinanceDetail.tipe === "Pemasukan"
+                ? "bg-status-success/5 border-status-success/30 text-status-success"
+                : "bg-status-danger/5 border-status-danger/30 text-status-danger"
+            }`}>
+              <p className="font-mono text-[10px] uppercase font-bold tracking-widest">{selectedFinanceDetail.tipe}</p>
+              <p className="font-display text-3xl font-extrabold mt-1">
+                {formatCurrency(selectedFinanceDetail.jumlah)}
+              </p>
+            </div>
+
+            <div className="space-y-2.5 text-xs font-body divide-y divide-alpine-high">
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Kategori:</span>
+                <span className="font-semibold text-ink-primary">{selectedFinanceDetail.kategori}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-ink-secondary">Tanggal:</span>
+                <span className="font-mono font-semibold text-ink-primary">{selectedFinanceDetail.tanggal}</span>
+              </div>
+              {selectedFinanceDetail.created_by && (
+                <div className="flex justify-between pt-2">
+                  <span className="text-ink-secondary">Dicatat Oleh:</span>
+                  <span className="font-mono font-semibold text-ink-primary">{selectedFinanceDetail.created_by}</span>
+                </div>
+              )}
+              {selectedFinanceDetail.catatan && (
+                <div className="flex flex-col gap-1 pt-2">
+                  <span className="text-ink-secondary">Catatan:</span>
+                  <p className="font-body text-ink-primary bg-alpine-low p-2.5 rounded-lg border border-alpine-high leading-relaxed">{selectedFinanceDetail.catatan}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button className="km-btn km-btn-secondary km-btn-sm" onClick={() => setSelectedFinanceDetail(null)}>
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

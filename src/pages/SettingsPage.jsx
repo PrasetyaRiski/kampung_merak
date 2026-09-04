@@ -22,6 +22,30 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
     interval_rotasi_menit: 240,
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [apiStatus, setApiStatus] = useState(null);
+  const [isCheckingApi, setIsCheckingApi] = useState(false);
+
+  const checkApiHealth = async () => {
+    setIsCheckingApi(true);
+    try {
+      const startTime = performance.now();
+      const res = await fetchApi("/");
+      const latency = Math.round(performance.now() - startTime);
+      setApiStatus({
+        status: "online",
+        message: typeof res === "object" ? (res.message || JSON.stringify(res)) : res,
+        latency
+      });
+    } catch (err) {
+      setApiStatus({ status: "offline", message: err.message });
+    } finally {
+      setIsCheckingApi(false);
+    }
+  };
+
+  useEffect(() => {
+    checkApiHealth();
+  }, []);
 
   useEffect(() => {
     fetchApi("/api/incubator/settings").then(data => {
@@ -85,6 +109,33 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
           <div className="rounded-xl border border-alpine-high p-4 bg-alpine-low">
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ink-outline">Koneksi</p>
             <p className="mt-1 font-mono text-sm font-semibold text-ink-primary">MQTT via WebSocket (EMQX)</p>
+          </div>
+          <div className="rounded-xl border border-alpine-high p-4 bg-alpine-low sm:col-span-2 lg:col-span-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className={`h-3 w-3 rounded-full ${apiStatus?.status === "online" ? "bg-status-success animate-pulse" : apiStatus ? "bg-status-dangerText" : "bg-ink-outline"}`} />
+              <div>
+                <p className="font-mono text-xs font-bold text-ink-primary flex items-center gap-2">
+                  API Backend Server (REST): {apiStatus?.status === "online" ? "Online & Siap" : apiStatus ? "Offline" : "Memeriksa..."}
+                  {apiStatus?.latency != null && (
+                    <span className="font-mono text-[10px] font-normal text-teal-iridescence px-1.5 py-0.5 rounded bg-teal-iridescence/10 border border-teal-iridescence/20">
+                      {apiStatus.latency} ms
+                    </span>
+                  )}
+                </p>
+                <p className="font-body text-xs text-ink-secondary mt-0.5">
+                  {apiStatus?.message || "Memeriksa status root endpoint (GET /)..."}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={checkApiHealth}
+              disabled={isCheckingApi}
+              className="km-btn km-btn-secondary km-btn-sm"
+              title="Ping Ulang API Server (GET /)"
+            >
+              <Icon name="sync" className={`text-[16px] ${isCheckingApi ? "animate-spin" : ""}`} />
+              {isCheckingApi ? "Memeriksa..." : "Ping Server"}
+            </button>
           </div>
         </div>
       </SectionCard>

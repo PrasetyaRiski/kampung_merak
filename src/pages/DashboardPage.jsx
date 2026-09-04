@@ -27,29 +27,27 @@ export default function DashboardPage({
   logs
 }) {
   const [summary, setSummary] = useState(null);
-  const [financeSummary, setFinanceSummary] = useState(null);
+  const [incubatorStatus, setIncubatorStatus] = useState(null);
 
   useEffect(() => {
-    const loadSummary = async () => {
+    const loadDashboard = async () => {
       try {
         const data = await fetchApi('/api/dashboard/summary');
         setSummary(data);
       } catch (err) {
-        console.error("Gagal memuat dashboard summary", err);
+        console.warn("Dashboard summary belum login atau error:", err.message);
       }
-    };
-    const loadFinanceSummary = async () => {
       try {
-        const data = await fetchApi('/api/finance/summary');
-        setFinanceSummary(data);
+        const statusData = await fetchApi('/api/incubator/status');
+        setIncubatorStatus(statusData);
       } catch (err) {
-        // Finance summary may require login, silently fail
-        console.warn("Finance summary tidak tersedia (login diperlukan?):", err.message);
+        console.warn("Status inkubator API gagal:", err.message);
       }
     };
-    loadSummary();
-    loadFinanceSummary();
+    loadDashboard();
   }, []);
+
+  const financeSummary = summary?.finance_summary;
 
   const isTempIdeal = telemetry.temperature >= 37.5 && telemetry.temperature <= 38.0;
   const isHumIdeal = telemetry.humidity >= 45 && telemetry.humidity <= 50;
