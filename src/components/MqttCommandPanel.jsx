@@ -55,7 +55,7 @@ export default function MqttCommandPanel({ telemetry, publish, role }) {
                 Ambang Batas Kelembaban
               </p>
               <p className="mt-1 font-body text-xs text-ink-secondary max-w-sm">
-                Admin dapat mengubah batas bawah dan atas kelembaban ideal.
+                Admin dan Operator dapat mengubah batas bawah dan atas kelembaban ideal.
               </p>
             </div>
             <StatusBadge

@@ -117,10 +117,10 @@ export const ROLES = {
   operator: {
     label: "Operator / Teknisi Inkubator",
     short: "Operator",
-    desc: "Dapat mengelola operasional telur, CCTV, histori, dan kontrol perangkat. Tidak dapat mengelola akun.",
+    desc: "Dapat mengelola operasional telur, CCTV, histori, kontrol perangkat, dan parameter mesin inkubator. Tidak dapat mengelola akun.",
     allowed: ["dashboard", "kamera", "telur", "indukan", "anakan", "katalog", "histori", "pengaturan"],
     canControl: true,
-    canConfigure: false,
+    canConfigure: true,
     canConfigureCctv: true,
     canEditEggs: true,
     canManagePeafowl: true,

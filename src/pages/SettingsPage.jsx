@@ -236,9 +236,13 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
             )}
           </div>
           {configurationLocked ? (
-            <p className="font-body text-xs text-status-dangerText">* Hanya Admin yang dapat mengubah parameter inkubator.</p>
+            <p className="font-body text-xs text-status-dangerText">* Hanya Admin dan Operator yang dapat mengubah parameter inkubator.</p>
           ) : (
-            <div className="pt-2 flex justify-end">
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
+              <p className="font-body text-xs text-teal-iridescence flex items-center gap-1.5">
+                <Icon name="verified_user" className="text-[14px]" />
+                Akses Diberikan: Admin dan Operator berwenang memperbarui parameter mesin ini.
+              </p>
               <button
                 type="button"
                 disabled={isSavingSettings}
