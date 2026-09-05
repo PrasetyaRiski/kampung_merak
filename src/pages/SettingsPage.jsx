@@ -13,6 +13,16 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
   }
 
   const configurationLocked = !ROLES[role].canConfigure;
+  const canConfigureCctv = Boolean(ROLES[role]?.canConfigureCctv ?? (role === "admin" || role === "operator"));
+  const cctvLocked = !canConfigureCctv;
+  const [cctvSavedToast, setCctvSavedToast] = useState(false);
+
+  const handleSaveCctv = () => {
+    setCctvSavedToast(true);
+    setTimeout(() => setCctvSavedToast(false), 2500);
+    const el = document.activeElement;
+    if (el) el.blur();
+  };
   
   const [apiSettings, setApiSettings] = useState(null);
   const [incubatorForm, setIncubatorForm] = useState({
@@ -245,7 +255,7 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
       <SectionCard title="Konfigurasi Kamera CCTV & Gateway RTSP">
         <div className="space-y-4">
           <p className="font-body text-sm text-ink-secondary leading-relaxed">
-            Atur alamat RTSP kamera Bardi Anda. Gateway Python (yang berjalan di localhost:5000) akan secara dinamis menyambung ke alamat ini ketika halaman CCTV dibuka.
+            Atur alamat RTSP kamera Bardi Anda. Gateway Python (yang berjalan di localhost:5000 atau PC Kandang) akan secara dinamis menyambung ke alamat ini ketika halaman CCTV dibuka.
           </p>
           <div>
             <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">URL RTSP Kamera Inkubator</label>
@@ -256,30 +266,38 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
                 onChange={(e) => setCctvUrl(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    e.target.blur();
+                    handleSaveCctv();
                   }
                 }}
-                disabled={configurationLocked}
+                disabled={cctvLocked}
                 placeholder="rtsp://admin:Admin123@192.168.110.227:554/V_ENC_000"
                 className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
               />
               <button
                 type="button"
-                disabled={configurationLocked}
-                onClick={() => {
-                  const el = document.activeElement;
-                  if (el) el.blur();
-                }}
+                disabled={cctvLocked}
+                onClick={handleSaveCctv}
                 className="px-6 py-2.5 rounded-xl bg-teal-iridescence text-white font-bold text-sm hover:bg-teal-iridescence/90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 shrink-0 shadow-sm"
               >
-                <span className="material-symbols-outlined text-[18px]">keyboard_return</span>
-                Enter
+                <Icon name="check" className="text-[18px]" />
+                Simpan
               </button>
             </div>
+            {cctvSavedToast && (
+              <p className="font-body text-xs text-status-success flex items-center gap-1 mt-2">
+                <Icon name="check_circle" className="text-[14px]" />
+                Alamat RTSP CCTV berhasil disimpan dan langsung aktif untuk gateway!
+              </p>
+            )}
           </div>
-          {configurationLocked && (
+          {cctvLocked ? (
             <p className="font-body text-xs text-status-dangerText">
-              * Hanya Admin yang dapat mengubah alamat kamera.
+              * Hanya Admin dan Operator yang dapat mengubah alamat kamera.
+            </p>
+          ) : (
+            <p className="font-body text-xs text-teal-iridescence flex items-center gap-1.5">
+              <Icon name="verified_user" className="text-[14px]" />
+              Akses Diberikan: Admin dan Operator berwenang memperbarui alamat RTSP ini.
             </p>
           )}
 
