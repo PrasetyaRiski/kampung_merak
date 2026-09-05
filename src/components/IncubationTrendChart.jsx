@@ -1,6 +1,6 @@
 import { DEFAULT_TREND, DEFAULT_HUMIDITY_TREND } from "../data/constants.js";
 
-function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, color, gradientId, isLive }) {
+function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, color, gradientId, isLive, currentValue }) {
   const width = 640;
   const height = 180;
   const padding = { top: 16, right: 10, bottom: 28, left: 8 };
@@ -8,7 +8,13 @@ function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, col
   const chartH = height - padding.top - padding.bottom;
   const safeData = (data || []).filter((value) => typeof value === "number" && !Number.isNaN(value));
   const fallback = fallbackSeries || DEFAULT_TREND;
-  const series = safeData.length > 1 ? safeData.slice(-24) : fallback;
+  let series = safeData.length > 1 ? safeData.slice(-24) : fallback;
+
+  if (currentValue != null) {
+    series = [...series];
+    series[series.length - 1] = currentValue;
+  }
+
   const min = Math.min(...series, idealRange[0] - 0.5) - 0.1;
   const max = Math.max(...series, idealRange[1] + 0.5) + 0.1;
   const toX = (index) => padding.left + (index / (series.length - 1)) * chartW;
@@ -79,7 +85,7 @@ function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, col
   );
 }
 
-export default function IncubationTrendChart({ trend, humidityTrend, isConnected }) {
+export default function IncubationTrendChart({ trend, humidityTrend, isConnected, currentTemp, currentHum }) {
   const isLive = Boolean(isConnected);
 
   return (
@@ -112,6 +118,7 @@ export default function IncubationTrendChart({ trend, humidityTrend, isConnected
           color: "#006b58",
           gradientId: "tempTrend",
           isLive,
+          currentValue: currentTemp,
         })}
         {renderCompactChart({
           title: "Kelembaban",
@@ -122,6 +129,7 @@ export default function IncubationTrendChart({ trend, humidityTrend, isConnected
           color: "#2563eb",
           gradientId: "humidityTrend",
           isLive,
+          currentValue: currentHum,
         })}
       </div>
     </section>

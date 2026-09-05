@@ -1,21 +1,22 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense, lazy } from "react";
 import Sidebar from "./components/Sidebar.jsx";
 import RoleLoginModal from "./components/RoleLoginModal.jsx";
 import RoleVerificationModal from "./components/RoleVerificationModal.jsx";
+import Footer from "./components/Footer.jsx";
 import { fetchApi } from "./utils/api.js";
 
 // Pages
 import DashboardPage from "./pages/DashboardPage.jsx";
-import CctvPage from "./pages/CctvPage.jsx";
-import EggPage from "./pages/EggPage.jsx";
-import SensorHistoryPage from "./pages/SensorHistoryPage.jsx";
-import SettingsPage from "./pages/SettingsPage.jsx";
-import AccountsPage from "./pages/AccountsPage.jsx";
-import SalesPage from "./pages/SalesPage.jsx";
-import FinancePage from "./pages/FinancePage.jsx";
-import KatalogPage from "./pages/KatalogPage.jsx";
-import BreedersPage from "./pages/BreedersPage.jsx";
-import ChicksPage from "./pages/ChicksPage.jsx";
+const CctvPage = lazy(() => import("./pages/CctvPage.jsx"));
+const EggPage = lazy(() => import("./pages/EggPage.jsx"));
+const SensorHistoryPage = lazy(() => import("./pages/SensorHistoryPage.jsx"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage.jsx"));
+const AccountsPage = lazy(() => import("./pages/AccountsPage.jsx"));
+const SalesPage = lazy(() => import("./pages/SalesPage.jsx"));
+const FinancePage = lazy(() => import("./pages/FinancePage.jsx"));
+const KatalogPage = lazy(() => import("./pages/KatalogPage.jsx"));
+const BreedersPage = lazy(() => import("./pages/BreedersPage.jsx"));
+const ChicksPage = lazy(() => import("./pages/ChicksPage.jsx"));
 
 // Hooks & Data
 import { useMqttBridge } from "./hooks/useMqttBridge.js";
@@ -350,9 +351,11 @@ export default function App() {
       cctvUrl,
       setCctvUrl,
     };
+    
+    let content;
     switch (activePage) {
       case "dashboard":
-        return (
+        content = (
           <DashboardPage
             {...props}
             mqttUrl={mqttUrl}
@@ -364,35 +367,62 @@ export default function App() {
             logs={logs}
           />
         );
+        break;
       case "kamera":
-        return <CctvPage {...props} />;
+        content = <CctvPage {...props} />;
+        break;
       case "telur":
-        return <EggPage {...props} />;
+        content = <EggPage {...props} />;
+        break;
       case "katalog":
-        return <KatalogPage {...props} onPageChange={handlePageChange} />;
+        content = <KatalogPage {...props} onPageChange={handlePageChange} />;
+        break;
       case "indukan":
-        return <BreedersPage {...props} />;
+        content = <BreedersPage {...props} />;
+        break;
       case "anakan":
-        return <ChicksPage {...props} />;
+        content = <ChicksPage {...props} />;
+        break;
       case "histori":
-        return <SensorHistoryPage {...props} />;
+        content = <SensorHistoryPage {...props} />;
+        break;
       case "pengaturan":
-        return (
+        content = (
           <SettingsPage
             {...props}
             activeVariety={activeVariety}
             setActiveVariety={setActiveVariety}
           />
         );
+        break;
       case "penjualan":
-        return <SalesPage {...props} sales={sales} setSales={setSales} />;
+        content = <SalesPage {...props} sales={sales} setSales={setSales} />;
+        break;
       case "finance":
-        return <FinancePage {...props} finance={finance} setFinance={setFinance} />;
+        content = <FinancePage {...props} finance={finance} setFinance={setFinance} />;
+        break;
       case "akun":
-        return <AccountsPage {...props} />;
+        content = <AccountsPage {...props} />;
+        break;
       default:
-        return <DashboardPage {...props} />;
+        content = <DashboardPage {...props} />;
+        break;
     }
+
+    return (
+      <Suspense
+        fallback={
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <div className="flex flex-col items-center gap-4 text-ink-secondary">
+              <span className="material-symbols-outlined animate-spin text-4xl">autorenew</span>
+              <p className="font-medium animate-pulse">Memuat halaman...</p>
+            </div>
+          </div>
+        }
+      >
+        {content}
+      </Suspense>
+    );
   };
 
   return (
@@ -457,12 +487,13 @@ export default function App() {
       />
 
       <main
-        className={`flex-1 transition-all duration-300 ease-in-out ${sidebarOpen ? "lg:ml-[280px]" : "lg:ml-0"}`}
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? "lg:ml-[280px]" : "lg:ml-0"}`}
         style={{ backgroundColor: "var(--alpine-mist)", color: "var(--ink-primary)" }}
       >
-        <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 flex-1 w-full">
           {renderPage()}
         </div>
+        <Footer onPageChange={handlePageChange} connection={connection} />
       </main>
 
       {showLoginModal && (

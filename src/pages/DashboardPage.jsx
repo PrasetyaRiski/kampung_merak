@@ -7,7 +7,6 @@ import HatcheryPerformanceChart from "../components/HatcheryPerformanceChart.jsx
 import IncubationProfile from "../components/IncubationProfile.jsx";
 import AlertPanel from "../components/AlertPanel.jsx";
 import EggTray from "../components/EggTray.jsx";
-import EmergencyControlPanel from "../components/EmergencyControlPanel.jsx";
 import SystemLogs from "../components/SystemLogs.jsx";
 import VarietyToggle from "../components/VarietyToggle.jsx";
 import { formatNumber, VARIETAS } from "../data/constants.js";
@@ -197,23 +196,27 @@ export default function DashboardPage({
         trend={temperatureTrend}
         humidityTrend={humidityTrend}
         isConnected={isMqttConnected}
+        currentTemp={currentTemp}
+        currentHum={currentHum}
       />
       
       {role === "admin" && <HatcheryPerformanceChart eggs={eggs} />}
       
+      {/* Baris atas: Profil Inkubasi + Log Sistem */}
       <div className="grid gap-6 xl:grid-cols-[1fr_400px]">
-        <div className="space-y-6">
-          <IncubationProfile variety={activeVariety} />
-          <AlertPanel
-            role={role}
-            publish={publish}
-          />
-          <EggTray eggs={eggs} />
-        </div>
-        <div className="space-y-6">
-          <EmergencyControlPanel telemetry={telemetry} publish={publish} role={role} />
+        <IncubationProfile variety={activeVariety} />
+        <div>
           <SystemLogs logs={logs} />
         </div>
+      </div>
+
+      {/* Baris bawah: Alert Operasional + Nampan Telur (sejajar) */}
+      <div className="grid gap-6 lg:grid-cols-2 items-start">
+        <AlertPanel
+          role={role}
+          publish={publish}
+        />
+        <EggTray eggs={eggs} />
       </div>
     </div>
   );
