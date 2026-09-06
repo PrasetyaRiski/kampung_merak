@@ -1,76 +1,187 @@
-# Kampung Merak - Dashboard Inkubator Telur Merak MQTT
+# 🪶 Kampung Merak - Dashboard Inkubator Telur Merak IoT
 
-Dashboard web berbasis React, Vite, Tailwind CSS, dan MQTT.js untuk **inkubator telur merak**. Proyek ini terbagi menjadi 3 komponen utama terpisah:
-1. **Frontend:** Aplikasi web React (Vite).
-2. **Backend API:** Server REST API Python (FastAPI) terhubung ke database MySQL.
-3. **CCTV Server:** Jembatan streaming video OpenCV RTSP-to-MJPEG.
+Dashboard cerdas berbasis web untuk pemantauan, pencatatan silsilah, kendali aktuator, dan live streaming CCTV pada mesin **Inkubator Telur Merak (Kampung Merak)**.
 
-Penjelasan mendalam tentang cara kerja arsitektur sistem, diagram alur data, spesifikasi teknologi, serta skema integrasi database dapat dibaca pada berkas [**SYSTEM_DOCUMENTATION.md**](file:///f:/kampung-merak-inkubator-mqtt/SYSTEM_DOCUMENTATION.md).
+Sistem ini mengintegrasikan mikrokontroler **ESP32**, broker cloud **HiveMQ**, REST API **FastAPI (Python) + MySQL**, gateway streaming **OpenCV**, dan antarmuka web modern berbasis **React 19 + Tailwind CSS**.
 
 ---
 
-## Fokus & Fitur Utama
+## 🌟 Fitur Utama
 
-- **Monitoring Real-Time:** Telemetri suhu & kelembaban dari sensor DHT22 via MQTT.
-- **Kendali Aktuator:** Sakelar lampu candling LED & manual trigger mist maker.
-- **Konfigurasi Ambang Batas:** Input batas atas/bawah kelembaban yang tersinkronisasi via MQTT.
-- **Manajemen Telur:** Visualisasi nampan 50 slot telur (fertil, menetas, infertil, gagal, kosong) terhubung ke database.
-- **Portal Penjualan & Kas:** Pencatatan kas keuangan masuk, diagram pendapatan, dan cetak Sertifikat DCA (Keaslian Silsilah Telur).
-- **Katalog Telur Publik:** Brosur visual premium varietas merak (Javanese Green & Indian Blue) untuk umum.
+- 🌡️ **Monitoring Telemetri Real-Time:** Pembacaan suhu dan kelembaban inkubator secara instan via protokol MQTT WebSocket (HiveMQ Cloud).
+- 💡 **Kendali Aktuator:** Sakelar lampu candling LED dan trigger manual mist maker (kelembaban).
+- 🥚 **Visualisasi Nampan Telur (Egg Tray):** Tampilan grid 50 slot telur dengan pemetaan status sinkron (*Fertil, Infertil, Menetas, Gagal Tetas, Proses*).
+- 📹 **Live Stream CCTV (Bardi/RTSP):** Pemantauan visual fisik nampan telur menggunakan OpenCV RTSP-to-MJPEG Gateway dan Nginx reverse proxy.
+- 💰 **Portal Kas & Penjualan Telur:** Pencatatan transaksi, ringkasan kas, grafik performa penetasan, dan cetak sertifikat keaslian silsilah telur (DCA).
+- 📖 **Katalog Telur Publik:** Brosur profil telur varietas merak (*Javanese Green Peacock* & *Indian Blue Peacock*).
+- ⚙️ **Konfigurasi Dinamis Tanpa Bongkar `.env`:** Kredensial MQTT terpusat di backend API, memudahkan perubahan broker tanpa kompilasi ulang frontend.
 
 ---
 
-## Panduan Menjalankan Sistem
+## 🏗️ Arsitektur Sistem
 
-Sistem ini sekarang menggunakan arsitektur cloud untuk backend database (terhubung ke server remote). Anda hanya perlu menjalankan 2 layanan lokal di terminal/CMD yang terpisah:
+```mermaid
+graph TD
+    ESP32[ESP32 / Sensor DHT22] -- MQTT TCP (Port 8883) --> HiveMQ[HiveMQ Cloud Broker]
+    React[Frontend React 19 + Vite] -- MQTT WSS (Port 8884) --> HiveMQ
+    React -- REST API (HTTP/JSON) --> FastAPI[FastAPI Backend Server]
+    FastAPI -- SQL Alchemy --> MySQL[(Database MySQL)]
+    CCTV[Kamera Bardi RTSP] -- RTSP Stream --> Gateway[OpenCV RTSP Gateway]
+    Gateway -- MJPEG Stream --> Nginx[Nginx Reverse Proxy]
+    Nginx -- /video_feed --> React
+```
 
-### 1. Menjalankan CCTV Server (Python OpenCV Gateway)
-Layanan ini mengonversi aliran video RTSP dari kamera CCTV Bardi agar dapat dibaca langsung oleh tag HTML Image di web browser.
+Dokumentasi arsitektur mendalam, spesifikasi API, dan skema database lengkap dapat dilihat pada [**SYSTEM_DOCUMENTATION.md**](SYSTEM_DOCUMENTATION.md).
 
-1. Buka terminal, masuk ke folder `server`:
+---
+
+## 📁 Struktur Direktori Proyek
+
+```text
+kampung-merak-inkubator-mqtt/
+├── src/                      # Source code Frontend React 19
+│   ├── components/           # Komponen UI (EggTray, ConnectionPanel, StatusBadge, dll.)
+│   ├── hooks/                # Custom React Hooks (useMqttBridge, dll.)
+│   ├── pages/                # Halaman Dashboard, Telur, CCTV, Kas, Pengaturan, dll.)
+│   └── utils/                # API helpers dan utilitas formatting
+├── fastapi-backend/          # Backend REST API (Python FastAPI)
+│   ├── app/
+│   │   ├── main.py           # Entry point API & endpoint settings
+│   │   ├── models.py         # Skema tabel database (SQLAlchemy)
+│   │   ├── schemas.py        # Validasi Pydantic (Request/Response)
+│   │   └── database.py       # Engine koneksi basis data MySQL
+│   ├── .env.example          # Template environment variable backend
+│   └── requirements.txt      # Dependensi pustaka Python
+├── server/                   # Gateway Video CCTV (OpenCV Flask)
+│   ├── rtsp_gateway_example.py # Konversi RTSP Bardi ke MJPEG HTTP
+│   └── requirements.txt      # Dependensi OpenCV & Flask
+├── public/                   # Aset publik, logo, dan audio alarm
+├── nginx.conf                # Konfigurasi reverse proxy Nginx untuk produksi
+├── Dockerfile                # Docker build frontend Nginx
+├── docker-compose.yml        # Orkestrasi kontainer Docker frontend
+├── deploy.py                 # Skrip otomatisasi deployment ke server lokal/VPS
+└── README.md                 # Dokumentasi proyek
+```
+
+---
+
+## 🚀 Panduan Menjalankan Sistem (Lokal / Development)
+
+### 1. Backend REST API (FastAPI + MySQL)
+1. Masuk ke direktori backend:
    ```bash
-   cd server
+   cd fastapi-backend
    ```
-2. Install dependensi OpenCV & Flask (jika belum):
+2. Buat dan aktifkan *virtual environment* Python:
+   ```bash
+   python -m venv venv
+   # Windows:
+   .\venv\Scripts\activate
+   # Linux/Mac:
+   source venv/bin/activate
+   ```
+3. Install dependensi:
    ```bash
    pip install -r requirements.txt
    ```
-3. Jalankan script gateway:
+4. Salin template konfigurasi `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+   *Pastikan database MySQL telah dibuat (contoh: database `kampung_merak`).*
+5. Jalankan server FastAPI:
+   ```bash
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+   *Dokumentasi Swagger API interaktif dapat dibuka di `http://localhost:8000/docs`.*
+
+---
+
+### 2. CCTV Stream Gateway (Python OpenCV)
+1. Buka terminal baru dan masuk ke folder `server`:
+   ```bash
+   cd server
+   pip install -r requirements.txt
+   ```
+2. Konfigurasikan IP kamera Bardi pada file `server/.env`:
+   ```env
+   INCUBATOR_RTSP_URL=rtsp://admin:Admin123@[IP_KAMERA_BARDI]:554/V_ENC_000
+   ```
+3. Jalankan gateway video:
    ```bash
    python rtsp_gateway_example.py
    ```
-   *(Layanan video stream akan aktif di port `5000`).*
+   *Stream video aktif di `http://localhost:5000/video_feed`.*
 
 ---
 
-### 2. Menjalankan Frontend Web (React + Vite)
-Aplikasi website antarmuka pengguna.
-
-1. Buka terminal baru di folder utama proyek (root).
-2. Install dependensi Node.js (jika belum):
+### 3. Frontend Web (React + Vite)
+1. Buka terminal baru pada root direktori:
    ```bash
    npm install
    ```
-3. Jalankan server pengembang:
+2. Salin dan sesuaikan file `.env` (jika diperlukan):
+   ```bash
+   cp .env.example .env
+   ```
+3. Jalankan development server:
    ```bash
    npm run dev
    ```
-4. Buka alamat website yang tampil di terminal Anda (biasanya `http://localhost:5173/`).
+4. Buka alamat `http://localhost:5173` di browser Anda.
 
 ---
 
-## Hak Akses Akun & Mode Demo
-Aplikasi secara bawaan masuk sebagai **Viewer** (Mode Baca). Untuk mengubah peran menjadi Admin atau Operator:
-1. Klik tombol **ikon Kunci/Key** (Login) di pojok kiri bawah (Sidebar).
-2. Masukkan **Email** dan **Kata Sandi** Anda (contoh akun Admin: `admin@kampungmerak.id` | Sandi: `admin123`).
-3. Sistem otomatis akan memberikan hak akses berdasarkan tipe akun (menyimpan Token JWT).
+## 🌐 Konfigurasi MQTT Dinamis (Solusi Bebas Bongkar `.env`)
+
+Aplikasi ini menggunakan **Dynamic Backend Configuration** untuk MQTT:
+- Frontend otomatis meminta kredensial MQTT via endpoint `GET /api/incubator/settings`.
+- Jika URL broker atau password MQTT berubah di masa depan, Anda **cukup mengedit file `.env` di backend** dan merestart backend:
+  ```env
+  MQTT_URL=wss://9170ac9caae04bc598c6d6111adfa4a1.s1.eu.hivemq.cloud:8884/mqtt
+  MQTT_USERNAME=endoqmerak
+  MQTT_PASSWORD=Admin123
+  ```
+- **Keuntungan:** Frontend tidak perlu di-build ulang (`npm run build`), dan di server tidak perlu mengotak-atik file `.env` frontend.
 
 ---
 
-## Panduan Build Produksi (Frontend)
-Untuk mengompilasi website menjadi berkas statis siap upload ke hosting Nginx/Cloudflare:
-```bash
-npm run build
-npm run preview
-```
-Aset hasil build akan diexport ke folder `dist/`.
+## 🚢 Deployment Produksi (Server / VPS / Docker)
+
+Proyek ini telah dilengkapi dengan kontainerisasi **Docker** dan skrip deploy SFTP/SSH otomatis:
+
+1. **Build Frontend Lokal:**
+   ```bash
+   npm run build
+   ```
+2. **Deploy Otomatis ke Server:**
+   ```bash
+   python deploy.py
+   ```
+   Skrip `deploy.py` akan:
+   - Mengemas folder `dist/`, `fastapi-backend/`, `server/`, dan konfigurasi `nginx.conf`.
+   - Mengunggah berkas terkompresi ke server via SFTP.
+   - Mengekstrak berkas, me-rebuild image Docker, dan merestart kontainer `kampung-merak-frontend`.
+   - Mengonfirmasi status HTTP port `8087`.
+
+3. **Proxy CCTV di Nginx:**
+   Pada file `nginx.conf`, rute `/video_feed` otomatis diteruskan ke gateway RTSP internal (`host.docker.internal:5000`), sehingga live feed CCTV aman dari kendala *Mixed Content HTTPS*.
+
+---
+
+## 🔑 Hak Akses & Peran Akun
+
+| Peran | Akses Halaman & Fitur |
+| :--- | :--- |
+| **Viewer** *(Default)* | Monitoring Dashboard, Visual Telur, Katalog Publik, CCTV. |
+| **Operator** | Seluruh akses Viewer + Manajemen Data Telur, Pencatatan Kas, dan Pengaturan Sistem. |
+| **Admin** | Akses penuh seluruh sistem termasuk Manajemen Akun Pengguna & Sertifikat DCA. |
+
+*Untuk login, klik ikon Kunci di sidebar kiri bawah.*
+
+---
+
+## 📄 Lisensi & Kontributor
+
+- **Pengembang:** Tim Kampung Merak & Mitra Pengembang
+- **Repository:** [PrasetyaRiski/kampung_merak](https://github.com/PrasetyaRiski/kampung_merak.git)
