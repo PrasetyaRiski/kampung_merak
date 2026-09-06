@@ -84,7 +84,7 @@ export function useMqttBridge() {
         lastConnectedAt: new Date().toISOString(),
         lastTelemetryAt: null,
       });
-      pushLog("MQTT", "Broker terhubung. Subscribe topik telemetri dijalankan.");
+      pushLog("MQTT", "Broker terhubung. Subscribe topik sensor dijalankan.");
       client.subscribe(SUBSCRIBE_TOPICS, { qos: 0 }, (error) => {
         if (error) {
           setConnection((current) => ({ ...current, status: "error", error: error.message }));

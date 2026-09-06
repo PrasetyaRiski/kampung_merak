@@ -161,7 +161,7 @@ export default function IncubationPage({
           <div className="flex items-end justify-between">
             <div>
               <p className="font-display text-3xl font-extrabold text-ink-primary">{connection.status === "connected" ? "Online" : "Offline"}</p>
-              <p className="mt-1 text-sm text-ink-secondary">{connection.lastTelemetryAt ? "Telemetry aktif" : "Menunggu data"}</p>
+              <p className="mt-1 text-sm text-ink-secondary">{connection.lastTelemetryAt ? "Sensor aktif" : "Menunggu data"}</p>
             </div>
             <span className={`rounded-2xl p-3 ${connection.status === "connected" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
               <Icon name="wifi" className="text-[22px]" />

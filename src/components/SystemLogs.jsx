@@ -16,7 +16,7 @@ export default function SystemLogs({ logs }) {
             Log Sistem
           </p>
           <h2 className="mt-1 font-display text-lg font-extrabold text-white">
-            Telemetri & Perintah MQTT
+            Komunikasi Sensor & Perintah MQTT
           </h2>
         </div>
         <span className="km-badge km-badge-dark font-mono text-[10px]">
