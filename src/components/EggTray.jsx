@@ -4,14 +4,19 @@ import { fetchApi } from "../utils/api.js";
 
 function getSlotStyle(egg) {
   if (!egg) return "bg-alpine-low text-ink-outline border-alpine-high hover:border-ink-outline-variant";
-  
-  const akhir = String(egg.akhir || "").toLowerCase().replace(/ /g, "_");
-  const fertilitas = String(egg.fertilitas || "").toLowerCase();
 
+  // Normalize: lowercase + ganti underscore ke spasi, agar cocok nilai DB ("Gagal Tetas", bukan "gagal_tetas")
+  const akhir = String(egg.akhir || "").toLowerCase().replace(/_/g, " ").trim();
+  const fertilitas = String(egg.fertilitas || "").toLowerCase().trim();
+
+  // Prioritas 1: sudah menetas → hijau
   if (akhir === "menetas") return "bg-status-successBg text-status-successText border-status-success";
-  if (akhir === "gagal_tetas" || akhir === "dibuang" || fertilitas === "infertil")
+  // Prioritas 2: gagal atau infertil → merah
+  if (akhir === "gagal tetas" || akhir === "dibuang" || fertilitas === "infertil")
     return "bg-status-dangerBg text-status-dangerText border-status-danger";
+  // Prioritas 3: terkonfirmasi fertil dan masih proses → teal
   if (fertilitas === "fertil") return "bg-teal-container text-teal-containerText border-teal-container";
+  // Prioritas 4: belum dicek / status tidak jelas → kuning
   return "bg-status-warningBg text-status-warningText border-status-warning";
 }
 

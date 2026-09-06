@@ -95,9 +95,10 @@ export function getFertilitasVariant(fertilitas) {
  * Get badge variant for egg akhir status
  */
 export function getEggStatusVariant(akhir) {
-  const normalized = String(akhir || "").toLowerCase().replace(/ /g, "_");
+  // Normalize: lowercase + ganti spasi & underscore agar cocok dengan nilai DB ("Gagal Tetas" maupun "gagal_tetas")
+  const normalized = String(akhir || "").toLowerCase().replace(/_/g, " ").trim();
   if (normalized === "menetas") return "success";
-  if (normalized === "gagal_tetas" || normalized === "dibuang") return "danger";
+  if (normalized === "gagal tetas" || normalized === "dibuang") return "danger";
   if (normalized === "proses") return "info";
   return "neutral";
 }

@@ -49,3 +49,10 @@ class TelemetryLogResponse(TelemetryLogBase):
 
     class Config:
         orm_mode = True
+
+# --- SCHEMAS SETTINGS / MQTT ---
+class IncubatorSettingsResponse(BaseModel):
+    mqtt_url: str
+    mqtt_username: Optional[str] = None
+    mqtt_password: Optional[str] = None
+    status: str = "online"

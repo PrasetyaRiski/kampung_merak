@@ -8,6 +8,8 @@ services:
     container_name: kampung-merak-frontend
     ports:
       - "8087:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: always
     environment:
       - NODE_ENV=production

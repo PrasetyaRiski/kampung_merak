@@ -5,9 +5,9 @@ import { fetchApi } from "../utils/api.js";
 
 export function useMqttBridge() {
   const [mqttConfig, setMqttConfig] = useState({
-    url: import.meta.env.VITE_MQTT_URL || "wss://broker.emqx.io:8084/mqtt",
-    username: import.meta.env.VITE_MQTT_USERNAME || undefined,
-    password: import.meta.env.VITE_MQTT_PASSWORD || undefined,
+    url: import.meta.env.VITE_MQTT_URL || "wss://9170ac9caae04bc598c6d6111adfa4a1.s1.eu.hivemq.cloud:8884/mqtt",
+    username: import.meta.env.VITE_MQTT_USERNAME || "endoqmerak",
+    password: import.meta.env.VITE_MQTT_PASSWORD || "Admin123",
   });
   const [clientId] = useState(
     () => `kampung-merak-inkubator-${Math.random().toString(16).slice(2, 10)}`
@@ -48,9 +48,9 @@ export function useMqttBridge() {
     fetchApi("/api/incubator/settings").then(settings => {
       if (mounted) {
         setMqttConfig({
-          url: settings.mqtt_url || import.meta.env.VITE_MQTT_URL || "wss://broker.emqx.io:8084/mqtt",
-          username: settings.mqtt_username || import.meta.env.VITE_MQTT_USERNAME || undefined,
-          password: settings.mqtt_password || import.meta.env.VITE_MQTT_PASSWORD || undefined,
+          url: settings.mqtt_url || import.meta.env.VITE_MQTT_URL || "wss://9170ac9caae04bc598c6d6111adfa4a1.s1.eu.hivemq.cloud:8884/mqtt",
+          username: settings.mqtt_username || import.meta.env.VITE_MQTT_USERNAME || "endoqmerak",
+          password: settings.mqtt_password || import.meta.env.VITE_MQTT_PASSWORD || "Admin123",
         });
       }
     }).catch(err => {

@@ -4,7 +4,7 @@ import RoleNotice, { AccessDenied } from "../components/RoleNotice.jsx";
 import SectionCard from "../components/SectionCard.jsx";
 import ConnectionPanel from "../components/ConnectionPanel.jsx";
 import { fetchApi } from "../utils/api.js";
-import { ROLES, VARIETAS } from "../data/constants.js";
+import { ROLES } from "../data/constants.js";
 import Icon from "../components/Icon.jsx";
 
 export default function SettingsPage({ role, activeVariety, setActiveVariety, mqttUrl, clientId, connection, cctvUrl, setCctvUrl }) {
@@ -12,7 +12,6 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
     return <AccessDenied role={role} feature="Pengaturan Sistem" />;
   }
 
-  const configurationLocked = !ROLES[role].canConfigure;
   const canConfigureCctv = Boolean(ROLES[role]?.canConfigureCctv ?? (role === "admin" || role === "operator"));
   const cctvLocked = !canConfigureCctv;
   const [cctvSavedToast, setCctvSavedToast] = useState(false);
@@ -24,15 +23,6 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
     if (el) el.blur();
   };
   
-  const [apiSettings, setApiSettings] = useState(null);
-  const [incubatorForm, setIncubatorForm] = useState({
-    suhu_min: 37.0,
-    suhu_max: 38.0,
-    kelembapan_min: 55.0,
-    kelembapan_max: 65.0,
-    interval_rotasi_menit: 240,
-  });
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [apiStatus, setApiStatus] = useState(null);
   const [isCheckingApi, setIsCheckingApi] = useState(false);
 
@@ -62,43 +52,6 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
     checkApiHealth();
   }, []);
 
-  useEffect(() => {
-    fetchApi("/api/incubator/settings").then(data => {
-      setApiSettings(data);
-      setIncubatorForm({
-        suhu_min: data.suhu_min ?? 37.0,
-        suhu_max: data.suhu_max ?? 38.0,
-        kelembapan_min: data.kelembapan_min ?? 55.0,
-        kelembapan_max: data.kelembapan_max ?? 65.0,
-        interval_rotasi_menit: data.interval_rotasi_menit ?? 240,
-      });
-    }).catch(err => console.error("Gagal memuat pengaturan inkubator:", err));
-  }, []);
-
-  const handleSaveIncubatorSettings = async () => {
-    if (configurationLocked) return;
-    setIsSavingSettings(true);
-    try {
-      const payload = {
-        suhu_min: parseFloat(incubatorForm.suhu_min),
-        suhu_max: parseFloat(incubatorForm.suhu_max),
-        kelembapan_min: parseFloat(incubatorForm.kelembapan_min),
-        kelembapan_max: parseFloat(incubatorForm.kelembapan_max),
-        interval_rotasi_menit: parseInt(incubatorForm.interval_rotasi_menit, 10),
-      };
-      const saved = await fetchApi("/api/incubator/settings", {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      });
-      setApiSettings(saved);
-      alert("Pengaturan inkubator berhasil disimpan!");
-    } catch (err) {
-      alert("Gagal menyimpan pengaturan: " + err.message);
-    } finally {
-      setIsSavingSettings(false);
-    }
-  };
-
   return (
     <div className="page-content space-y-6">
       <PageHeader
@@ -108,8 +61,6 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
       />
 
       <RoleNotice role={role} />
-
-
 
       <SectionCard title="Informasi Aplikasi">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -158,103 +109,6 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
       </SectionCard>
 
       <ConnectionPanel mqttUrl={mqttUrl} clientId={clientId} connection={connection} />
-
-      {/* Parameter Inkubator */}
-      <SectionCard title="Parameter Mesin Inkubator">
-        <div className="space-y-4">
-          <p className="font-body text-sm text-ink-secondary leading-relaxed">
-            Atur batas suhu dan kelembaban ideal untuk inkubasi telur merak. Nilai ini digunakan sebagai referensi alarm dan monitoring.
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Suhu Minimum (°C)</label>
-              <input
-                type="number"
-                step="0.1"
-                min="30" max="45"
-                value={incubatorForm.suhu_min}
-                onChange={(e) => setIncubatorForm({ ...incubatorForm, suhu_min: e.target.value })}
-                disabled={configurationLocked}
-                className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Suhu Maksimum (°C)</label>
-              <input
-                type="number"
-                step="0.1"
-                min="30" max="45"
-                value={incubatorForm.suhu_max}
-                onChange={(e) => setIncubatorForm({ ...incubatorForm, suhu_max: e.target.value })}
-                disabled={configurationLocked}
-                className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Kelembaban Minimum (%)</label>
-              <input
-                type="number"
-                step="0.5"
-                min="20" max="100"
-                value={incubatorForm.kelembapan_min}
-                onChange={(e) => setIncubatorForm({ ...incubatorForm, kelembapan_min: e.target.value })}
-                disabled={configurationLocked}
-                className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Kelembaban Maksimum (%)</label>
-              <input
-                type="number"
-                step="0.5"
-                min="20" max="100"
-                value={incubatorForm.kelembapan_max}
-                onChange={(e) => setIncubatorForm({ ...incubatorForm, kelembapan_max: e.target.value })}
-                disabled={configurationLocked}
-                className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-ink-primary uppercase tracking-widest mb-1.5">Interval Rotasi (menit)</label>
-              <input
-                type="number"
-                step="1"
-                min="30" max="720"
-                value={incubatorForm.interval_rotasi_menit}
-                onChange={(e) => setIncubatorForm({ ...incubatorForm, interval_rotasi_menit: e.target.value })}
-                disabled={configurationLocked}
-                className="w-full rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-sm font-mono text-ink-primary shadow-inner outline-none transition-all placeholder:text-ink-outline focus:border-teal-iridescence focus:ring-1 focus:ring-teal-iridescence disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            {apiSettings && (
-              <div className="flex items-end pb-0.5">
-                <div className="rounded-xl border border-alpine-high bg-alpine-low px-4 py-2.5 text-xs font-mono text-ink-secondary w-full">
-                  <span className="font-bold text-ink-outline">Terakhir diubah oleh:</span><br />
-                  <span className="text-ink-primary">{apiSettings.updated_by || "—"}</span>
-                </div>
-              </div>
-            )}
-          </div>
-          {configurationLocked ? (
-            <p className="font-body text-xs text-status-dangerText">* Hanya Admin dan Operator yang dapat mengubah parameter inkubator.</p>
-          ) : (
-            <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
-              <p className="font-body text-xs text-teal-iridescence flex items-center gap-1.5">
-                <Icon name="verified_user" className="text-[14px]" />
-                Akses Diberikan: Admin dan Operator berwenang memperbarui parameter mesin ini.
-              </p>
-              <button
-                type="button"
-                disabled={isSavingSettings}
-                onClick={handleSaveIncubatorSettings}
-                className="km-btn km-btn-primary px-6"
-              >
-                {isSavingSettings ? "Menyimpan..." : "Simpan Parameter Inkubator"}
-              </button>
-            </div>
-          )}
-        </div>
-      </SectionCard>
 
       <SectionCard title="Konfigurasi Kamera CCTV & Gateway RTSP">
         <div className="space-y-4">

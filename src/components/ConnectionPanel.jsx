@@ -52,7 +52,7 @@ export default function ConnectionPanel({ mqttUrl, clientId, connection }) {
         />
       </div>
 
-      <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
+      <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
         <div className="rounded-xl bg-alpine-low px-3 py-2.5">
           <p className="font-body text-[10px] text-ink-secondary uppercase tracking-wide">
             Broker WebSocket
@@ -67,16 +67,6 @@ export default function ConnectionPanel({ mqttUrl, clientId, connection }) {
           </p>
           <p className="mt-1 font-mono text-xs font-semibold text-ink-primary truncate">
             {clientId}
-          </p>
-        </div>
-        <div className="rounded-xl bg-alpine-low px-3 py-2.5">
-          <p className="font-body text-[10px] text-ink-secondary uppercase tracking-wide">
-            Telemetri Terakhir
-          </p>
-          <p className="mt-1 font-mono text-xs font-semibold text-ink-primary">
-            {connection.lastTelemetryAt
-              ? new Date(connection.lastTelemetryAt).toLocaleTimeString("id-ID")
-              : "Belum ada data"}
           </p>
         </div>
       </div>
