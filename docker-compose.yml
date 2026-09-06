@@ -10,6 +10,7 @@ services:
       - "8087:80"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "cctv-gateway:127.0.0.1"
     restart: always
     environment:
       - NODE_ENV=production
