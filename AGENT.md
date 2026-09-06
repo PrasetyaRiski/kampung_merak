@@ -141,23 +141,7 @@ IncubatorStatus
 - suhu_sekarang: numeric(5,2)
 - kelembapan_sekarang: numeric(5,2)
 - lampu_status: enum(ON, OFF)   # otomatis, ditentukan device berdasarkan threshold
-- terakhir_rotasi: datetime
 - updated_at: datetime
-```
-
-**c. TelemetryLogs / RotationLogs** (history, existing + tambahan)
-```
-TelemetryLogs (existing, tidak berubah)
-- id: int (auto PK)
-- timestamp: str
-- temperature: numeric(5,2)
-- humidity: numeric(5,2)
-
-RotationLogs (baru)
-- id: int (auto PK)
-- timestamp: str
-- status: enum(sukses, gagal)
-- catatan: text (nullable)
 ```
 
 ### 4.6 Sales (existing, tidak berubah)
@@ -182,13 +166,13 @@ FinanceEntry
 ```
 Alert
 - id: int (auto PK)
-- tipe: enum(suhu, kelembapan, rotasi_gagal, lain)
+- tipe: enum(suhu, kelembapan, lain)
 - pesan: str
 - level: enum(info, warning, critical)
 - is_read: bool (default False)
 - created_at: datetime
 ```
-Dibuat otomatis oleh sistem saat data telemetry masuk dan nilainya keluar dari `IncubatorSettings` (suhu_min/max, kelembapan_min/max), atau saat rotasi gagal tercatat.
+Dibuat otomatis oleh sistem saat data telemetry masuk dan nilainya keluar dari `IncubatorSettings` (suhu_min/max, kelembapan_min/max).
 
 ---
 
@@ -235,8 +219,6 @@ Dibuat otomatis oleh sistem saat data telemetry masuk dan nilainya keluar dari `
 | PUT | `/api/incubator/settings` | pemilik, staff (login wajib) |
 | GET | `/api/incubator/status` | **publik, tanpa login** |
 | POST | `/api/incubator/status` | device/internal (IoT gateway push data, pakai API key khusus device, bukan JWT user) |
-| GET | `/api/incubator/telemetry-logs` | **publik, tanpa login** |
-| GET | `/api/incubator/rotation-logs` | **publik, tanpa login** |
 
 ### Sales
 | Method | Endpoint | Role |

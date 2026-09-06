@@ -23,7 +23,7 @@ kampung-merak-inkubator-mqtt/
 │           ├── breeders.py         # Manajemen indukan + lineage + compare
 │           ├── eggs.py             # Manajemen telur
 │           ├── chicks.py           # Manajemen anakan
-│           ├── incubator.py        # Settings, status, telemetry, rotation logs
+│           ├── incubator.py        # Settings & status inkubator
 │           ├── sales.py            # Manajemen penjualan
 │           ├── finance.py          # Pemasukan/pengeluaran (pemilik only)
 │           ├── dashboard.py        # Ringkasan dashboard
@@ -201,10 +201,6 @@ Semua request (termasuk endpoint publik) **wajib** menyertakan header `X-API-Key
 | PUT    | `/api/incubator/settings`             | pemilik, staff                |
 | GET    | `/api/incubator/status`               | publik                        |
 | POST   | `/api/incubator/status`               | device/internal (X-API-Key)   |
-| GET    | `/api/incubator/telemetry-logs`       | publik                        |
-| POST   | `/api/incubator/telemetry-logs`       | internal                      |
-| GET    | `/api/incubator/rotation-logs`        | publik                        |
-| POST   | `/api/incubator/rotation-logs`        | internal                      |
 
 **Auto-alert:** Saat `POST /api/incubator/status`, sistem otomatis membuat Alert jika suhu/kelembapan keluar dari range yang ditentukan di IncubatorSettings.
 
@@ -340,24 +336,7 @@ Fitur:
 | suhu_sekarang     | NUMERIC(5,2) | Suhu saat ini (°C)            |
 | kelembapan_sekarang| NUMERIC(5,2)| Kelembapan saat ini (%)       |
 | lampu_status      | ENUM         | ON / OFF                      |
-| terakhir_rotasi   | DATETIME     | Nullable                      |
 | updated_at        | DATETIME     |                               |
-
-**TelemetryLogs**
-| Kolom       | Tipe         | Keterangan                    |
-|-------------|--------------|-------------------------------|
-| id          | INT (auto)   | Primary key                   |
-| timestamp   | VARCHAR(50)  | Waktu pencatatan              |
-| temperature | NUMERIC(5,2) | Suhu (°C)                     |
-| humidity    | NUMERIC(5,2) | Kelembapan (%)                |
-
-**RotationLogs**
-| Kolom       | Tipe         | Keterangan                    |
-|-------------|--------------|-------------------------------|
-| id          | INT (auto)   | Primary key                   |
-| timestamp   | VARCHAR(50)  | Waktu                         |
-| status      | ENUM         | sukses / gagal                |
-| catatan     | TEXT         | Nullable                      |
 
 **Sales**
 | Kolom       | Tipe           | Keterangan                    |

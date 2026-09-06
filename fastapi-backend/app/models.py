@@ -49,11 +49,6 @@ class LampuStatus(str, enum.Enum):
     OFF = "OFF"
 
 
-class RotasiStatus(str, enum.Enum):
-    SUKSES = "sukses"
-    GAGAL = "gagal"
-
-
 class FinanceTipe(str, enum.Enum):
     PEMASUKAN = "Pemasukan"
     PENGELUARAN = "Pengeluaran"
@@ -62,7 +57,6 @@ class FinanceTipe(str, enum.Enum):
 class AlertTipe(str, enum.Enum):
     SUHU = "suhu"
     KELEMBAPAN = "kelembapan"
-    ROTASI_GAGAL = "rotasi_gagal"
     LAIN = "lain"
 
 
@@ -142,24 +136,7 @@ class IncubatorStatus(Base):
     suhu_sekarang = Column(Numeric(5, 2), nullable=False)
     kelembapan_sekarang = Column(Numeric(5, 2), nullable=False)
     lampu_status = Column(SAEnum(LampuStatus), nullable=False)
-    terakhir_rotasi = Column(DateTime, nullable=True)
     updated_at = Column(DateTime, server_default=func.now())
-
-
-class TelemetryLog(Base):
-    __tablename__ = "telemetry_logs"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    timestamp = Column(String(50), nullable=False)
-    temperature = Column(Numeric(5, 2), nullable=False)
-    humidity = Column(Numeric(5, 2), nullable=False)
-
-
-class RotationLog(Base):
-    __tablename__ = "rotation_logs"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    timestamp = Column(String(50), nullable=False)
-    status = Column(SAEnum(RotasiStatus), nullable=False)
-    catatan = Column(Text, nullable=True)
 
 
 class Sale(Base):

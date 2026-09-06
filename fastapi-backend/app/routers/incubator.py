@@ -1,14 +1,11 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
 from ..database import get_db
-from ..models import IncubatorSettings, IncubatorStatus, TelemetryLog, RotationLog, Alert, AlertTipe, AlertLevel
+from ..models import IncubatorSettings, IncubatorStatus, Alert, AlertTipe, AlertLevel
 from ..schemas import (
     IncubatorSettingsBase, IncubatorSettingsResponse,
     IncubatorStatusCreate, IncubatorStatusResponse,
-    TelemetryLogBase, TelemetryLogResponse,
-    RotationLogBase, RotationLogResponse,
 )
 from ..auth import require_role
 
@@ -88,41 +85,3 @@ def create_status(
     check_and_create_alerts(db, status_data.suhu_sekarang, status_data.kelembapan_sekarang)
 
     return new_status
-
-
-@router.get("/telemetry-logs", response_model=List[TelemetryLogResponse])
-def get_telemetry_logs(db: Session = Depends(get_db)):
-    return db.query(TelemetryLog).order_by(TelemetryLog.id.desc()).limit(100).all()
-
-
-@router.post("/telemetry-logs", response_model=TelemetryLogResponse, status_code=201)
-def create_telemetry_log(log_data: TelemetryLogBase, db: Session = Depends(get_db)):
-    log = TelemetryLog(**log_data.model_dump())
-    db.add(log)
-    db.commit()
-    db.refresh(log)
-    return log
-
-
-@router.get("/rotation-logs", response_model=List[RotationLogResponse])
-def get_rotation_logs(db: Session = Depends(get_db)):
-    return db.query(RotationLog).order_by(RotationLog.id.desc()).all()
-
-
-@router.post("/rotation-logs", response_model=RotationLogResponse, status_code=201)
-def create_rotation_log(log_data: RotationLogBase, db: Session = Depends(get_db)):
-    log = RotationLog(**log_data.model_dump())
-    db.add(log)
-    db.commit()
-    db.refresh(log)
-
-    if log_data.status == "gagal":
-        alert = Alert(
-            tipe=AlertTipe.ROTASI_GAGAL,
-            pesan="Rotasi telur gagal",
-            level=AlertLevel.WARNING,
-        )
-        db.add(alert)
-        db.commit()
-
-    return log

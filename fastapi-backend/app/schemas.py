@@ -139,7 +139,6 @@ class IncubatorStatusBase(BaseModel):
     suhu_sekarang: float
     kelembapan_sekarang: float
     lampu_status: str
-    terakhir_rotasi: Optional[datetime] = None
 
 class IncubatorStatusResponse(IncubatorStatusBase):
     id: int
@@ -148,28 +147,6 @@ class IncubatorStatusResponse(IncubatorStatusBase):
 
 class IncubatorStatusCreate(IncubatorStatusBase):
     pass
-
-
-# --- Telemetry Log ---
-class TelemetryLogBase(BaseModel):
-    timestamp: str
-    temperature: float
-    humidity: float
-
-class TelemetryLogResponse(TelemetryLogBase):
-    id: int
-    model_config = ConfigDict(from_attributes=True)
-
-
-# --- Rotation Log ---
-class RotationLogBase(BaseModel):
-    timestamp: str
-    status: str
-    catatan: Optional[str] = None
-
-class RotationLogResponse(RotationLogBase):
-    id: int
-    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Sales ---

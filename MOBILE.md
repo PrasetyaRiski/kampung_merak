@@ -13,7 +13,7 @@
 | State Management | **Riverpod** (`flutter_riverpod`) |
 | HTTP Client | **Dio** (`dio`) |
 | Routing | **GoRouter** (`go_router`) |
-| Charts | **fl_chart** (line chart telemetry) |
+| Charts | **fl_chart** (line chart suhu & kelembapan) |
 | Secure Storage | **flutter_secure_storage** (token JWT + API Key) |
 | Pull-to-Refresh | `RefreshIndicator` built-in |
 | Build | APK / App Bundle via `flutter build` |
@@ -53,8 +53,6 @@ pavoprecise_app/
 │   │   │   ├── chick.dart
 │   │   │   ├── incubator_settings.dart
 │   │   │   ├── incubator_status.dart
-│   │   │   ├── telemetry_log.dart
-│   │   │   ├── rotation_log.dart
 │   │   │   ├── sale.dart
 │   │   │   ├── finance_entry.dart
 │   │   │   ├── alert.dart
@@ -97,9 +95,7 @@ pavoprecise_app/
 │   │   │   ├── settings_screen.dart      # Edit threshold
 │   │   │   └── widgets/
 │   │   │       ├── status_widget.dart
-│   │   │       ├── telemetry_chart.dart
-│   │   │       ├── rotation_log_list.dart
-│   │   │       └── settings_form.dart
+│   │   │       ├── settings_form.dart
 │   │   │
 │   │   ├── breeders/
 │   │   │   ├── breeders_list_screen.dart
@@ -312,37 +308,7 @@ class IncubatorStatus {
 }
 ```
 
-### 4.7 TelemetryLog
-
-```dart
-class TelemetryLog {
-  final int id;
-  final String timestamp;
-  final double temperature;
-  final double humidity;
-
-  TelemetryLog({...});
-  factory TelemetryLog.fromJson(Map<String, dynamic> json);
-  Map<String, dynamic> toJson();
-}
-```
-
-### 4.8 RotationLog
-
-```dart
-class RotationLog {
-  final int id;
-  final String timestamp;
-  final String status;         // "sukses" | "gagal"
-  final String? catatan;
-
-  RotationLog({...});
-  factory RotationLog.fromJson(Map<String, dynamic> json);
-  Map<String, dynamic> toJson();
-}
-```
-
-### 4.9 Sale
+### 4.7 Sale
 
 ```dart
 class Sale {
@@ -567,16 +533,11 @@ class AuthResponse {
 - Current temperature (large numeric display)
 - Current humidity
 - Lamp status (ON/OFF with icon)
-- Last rotation time
 - Status indicator (normal/warning/critical)
 
 **Tab 2 — Grafik:**
 - fl_chart line chart: temperature (line biru) + humidity (line hijau) vs time
 - Range selector (1 jam, 6 jam, 24 jam, 7 hari)
-
-**Tab 3 — Rotasi:**
-- List rotation logs (timestamp, status, catatan)
-- Success/failure indicator
 
 ### 6.4 Settings Screen (Incubator)
 - Form untuk edit: suhu min, suhu max, kelembapan min, kelembapan max, interval rotasi
@@ -746,8 +707,6 @@ final breederFormProvider = AsyncNotifierProvider.family<BreederFormNotifier, vo
 | GET | `/api/incubator/status` | `incubatorStatusProvider` |
 | GET | `/api/incubator/settings` | `incubatorSettingsProvider` |
 | PUT | `/api/incubator/settings` | `incubatorSettingsProvider.update(data)` |
-| GET | `/api/incubator/telemetry-logs` | `telemetryLogsProvider` |
-| GET | `/api/incubator/rotation-logs` | `rotationLogsProvider` |
 | GET | `/api/breeders` | `breedersListProvider` |
 | GET | `/api/breeders/{id}` | `breederDetailProvider(id)` |
 | GET | `/api/breeders/{id}/lineage` | `breederLineageProvider(id)` |
