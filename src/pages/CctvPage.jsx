@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "../components/PageHeader.jsx";
 import RoleNotice, { AccessDenied } from "../components/RoleNotice.jsx";
 import SectionCard from "../components/SectionCard.jsx";
@@ -9,7 +9,7 @@ export default function CctvPage({ role, cctvUrl }) {
     return <AccessDenied role={role} feature="Kamera CCTV" />;
   }
 
-  const mjpegIncubatorBase = import.meta.env.VITE_RTSP_MJPEG_URL || "http://localhost:5000/video_feed";
+  const mjpegIncubatorBase = import.meta.env.VITE_RTSP_MJPEG_URL || "/video_feed";
 
   // Extract IP from cctvUrl for display
   const extractIp = (url) => {
@@ -29,11 +29,40 @@ export default function CctvPage({ role, cctvUrl }) {
   // State untuk melacak error pemuatan stream & melakukan cache-busting reload
   const [incError, setIncError] = useState(false);
   const [incKey, setIncKey] = useState(Date.now());
+  const [isReachable, setIsReachable] = useState(null); // null: checking, true: live, false: offline
+
+  useEffect(() => {
+    let mounted = true;
+    const checkCctvHealth = async () => {
+      try {
+        const res = await fetch("/cctv_health");
+        if (res.ok) {
+          const data = await res.json();
+          if (mounted) {
+            setIsReachable(Boolean(data.incubator_reachable));
+          }
+        }
+      } catch {
+        // Abaikan jika network error
+      }
+    };
+
+    checkCctvHealth();
+    const timer = setInterval(checkCctvHealth, 8000);
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, [incKey]);
 
   const handleReloadIncubator = () => {
     setIncError(false);
+    setIsReachable(null);
     setIncKey(Date.now());
   };
+
+  const isOffline = incError || isReachable === false;
+  const isChecking = isReachable === null && !incError;
 
   return (
     <div className="page-content space-y-6">
@@ -55,10 +84,20 @@ export default function CctvPage({ role, cctvUrl }) {
             </div>
             <div className="flex items-center gap-2">
               <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${
-                incError ? 'bg-status-danger-bg text-status-danger-text' : 'bg-status-success-bg text-status-success-text'
+                isOffline 
+                  ? 'bg-status-danger-bg text-status-danger-text' 
+                  : isChecking
+                  ? 'bg-amber-500/10 text-amber-400'
+                  : 'bg-status-success-bg text-status-success-text'
               }`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${incError ? 'bg-status-danger' : 'bg-status-success animate-pulse'}`} />
-                {incError ? 'OFFLINE' : 'LIVE'}
+                <span className={`h-1.5 w-1.5 rounded-full ${
+                  isOffline 
+                    ? 'bg-status-danger' 
+                    : isChecking
+                    ? 'bg-amber-400 animate-ping'
+                    : 'bg-status-success animate-pulse'
+                }`} />
+                {isOffline ? 'OFFLINE' : isChecking ? 'MENYAMBUNG' : 'LIVE'}
               </span>
               <button
                 onClick={handleReloadIncubator}

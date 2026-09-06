@@ -115,7 +115,13 @@ run_cmd(
     "Menjalankan ulang kontainer Docker"
 )
 
-# 7. Verifikasi
+# 7. Restart CCTV RTSP Gateway Service
+run_cmd(
+    "systemctl restart kampung-merak-cctv",
+    "Memuat ulang service RTSP Gateway CCTV"
+)
+
+# 8. Verifikasi
 run_cmd(
     f"cd {REMOTE_TARGET_DIR} && docker compose ps && curl -I http://127.0.0.1:8087/",
     "Memverifikasi status kontainer dan HTTP port 8087"
