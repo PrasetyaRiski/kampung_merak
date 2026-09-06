@@ -9,7 +9,7 @@ if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
-SERVER_IP = "192.168.1.7"
+SERVER_IP = sys.argv[1] if len(sys.argv) > 1 else "100.86.217.35"
 SERVER_USER = "root"
 SERVER_PASS = "openwifi"
 REMOTE_TARGET_DIR = "/mnt/storage/www/web/kampung-merak-inkubator-mqtt"
