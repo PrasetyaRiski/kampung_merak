@@ -136,20 +136,31 @@ export default function DashboardPage({
         />
       </div>
 
-      {summary && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="km-card p-5 bg-surface border-l-4 border-l-teal-iridescence">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-teal-iridescence">Total Telur Aktif</p>
-            <p className="mt-1 font-display text-3xl font-extrabold text-ink-primary">{summary.total_telur_aktif}</p>
-            <p className="mt-0.5 font-body text-xs text-ink-secondary">Dalam Mesin Inkubator</p>
+      {(() => {
+        const activeEggsCount = Array.isArray(eggs)
+          ? eggs.filter(e => e.akhir !== "Gagal" && e.akhir !== "Menetas").length
+          : 0;
+        const hatchedChicksCount = Array.isArray(eggs)
+          ? eggs.filter(e => e.akhir === "Menetas").length
+          : 0;
+        const totalAktif = summary?.total_telur_aktif ?? activeEggsCount;
+        const totalAnakan = summary?.total_anakan_bulan_ini ?? hatchedChicksCount;
+
+        return (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="km-card p-5 bg-surface border-l-4 border-l-teal-iridescence">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-teal-iridescence">Total Telur Aktif</p>
+              <p className="mt-1 font-display text-3xl font-extrabold text-ink-primary">{totalAktif}</p>
+              <p className="mt-0.5 font-body text-xs text-ink-secondary">Dalam Mesin Inkubator</p>
+            </div>
+            <div className="km-card p-5 bg-surface border-l-4 border-l-status-success">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-status-success">Total Anakan Bulan Ini</p>
+              <p className="mt-1 font-display text-3xl font-extrabold text-ink-primary">{totalAnakan}</p>
+              <p className="mt-0.5 font-body text-xs text-ink-secondary">Menetas Sukses</p>
+            </div>
           </div>
-          <div className="km-card p-5 bg-surface border-l-4 border-l-status-success">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-status-success">Total Anakan Bulan Ini</p>
-            <p className="mt-1 font-display text-3xl font-extrabold text-ink-primary">{summary.total_anakan_bulan_ini}</p>
-            <p className="mt-0.5 font-body text-xs text-ink-secondary">Menetas Sukses</p>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {financeSummary && (() => {
         const totalPemasukan = financeSummary.total_pemasukan ?? 0;

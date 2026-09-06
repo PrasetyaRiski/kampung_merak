@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: kampung-merak-frontend
     ports:
-      - "8084:80"
+      - "8087:80"
     restart: always
     environment:
       - NODE_ENV=production

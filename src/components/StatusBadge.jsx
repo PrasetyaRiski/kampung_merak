@@ -85,8 +85,9 @@ export function getAlertVariant(level) {
  * Get badge variant for fertilitas
  */
 export function getFertilitasVariant(fertilitas) {
-  if (fertilitas === "fertil") return "teal";
-  if (fertilitas === "infertil") return "danger";
+  const normalized = String(fertilitas || "").toLowerCase();
+  if (normalized === "fertil") return "teal";
+  if (normalized === "infertil") return "danger";
   return "neutral";
 }
 
@@ -94,9 +95,10 @@ export function getFertilitasVariant(fertilitas) {
  * Get badge variant for egg akhir status
  */
 export function getEggStatusVariant(akhir) {
-  if (akhir === "menetas") return "success";
-  if (akhir === "gagal_tetas" || akhir === "dibuang") return "danger";
-  if (akhir === "proses") return "info";
+  const normalized = String(akhir || "").toLowerCase().replace(/ /g, "_");
+  if (normalized === "menetas") return "success";
+  if (normalized === "gagal_tetas" || normalized === "dibuang") return "danger";
+  if (normalized === "proses") return "info";
   return "neutral";
 }
 

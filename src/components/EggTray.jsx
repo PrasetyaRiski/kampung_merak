@@ -2,10 +2,14 @@ import EmptyState from "./EmptyState.jsx";
 
 function getSlotStyle(egg) {
   if (!egg) return "bg-alpine-low text-ink-outline border-alpine-high hover:border-ink-outline-variant";
-  if (egg.akhir === "menetas") return "bg-status-successBg text-status-successText border-status-success";
-  if (egg.akhir === "gagal_tetas" || egg.fertilitas === "infertil")
+  
+  const akhir = String(egg.akhir || "").toLowerCase().replace(/ /g, "_");
+  const fertilitas = String(egg.fertilitas || "").toLowerCase();
+
+  if (akhir === "menetas") return "bg-status-successBg text-status-successText border-status-success";
+  if (akhir === "gagal_tetas" || akhir === "dibuang" || fertilitas === "infertil")
     return "bg-status-dangerBg text-status-dangerText border-status-danger";
-  if (egg.fertilitas === "fertil") return "bg-teal-container text-teal-containerText border-teal-container";
+  if (fertilitas === "fertil") return "bg-teal-container text-teal-containerText border-teal-container";
   return "bg-status-warningBg text-status-warningText border-status-warning";
 }
 

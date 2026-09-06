@@ -228,9 +228,18 @@ export default function App() {
 
     console.log("Memuat data dari API untuk inisialisasi state...");
     Promise.allSettled([
-      fetchApi('/api/breeders').then(data => setPeafowl(data)).catch(err => console.warn("Gagal memuat indukan:", err)),
-      fetchApi('/api/sales').then(data => setSalesState(data)).catch(err => console.warn("Gagal memuat penjualan:", err)),
-      fetchApi('/api/finance').then(data => setFinanceState(data)).catch(err => console.warn("Gagal memuat finance:", err)),
+      fetchApi('/api/eggs').then(data => {
+        if (Array.isArray(data)) setEggsState(data);
+      }).catch(err => console.warn("Gagal memuat telur dari API:", err)),
+      fetchApi('/api/breeders').then(data => {
+        if (Array.isArray(data)) setPeafowl(data);
+      }).catch(err => console.warn("Gagal memuat indukan:", err)),
+      fetchApi('/api/sales').then(data => {
+        if (Array.isArray(data)) setSalesState(data);
+      }).catch(err => console.warn("Gagal memuat penjualan:", err)),
+      fetchApi('/api/finance').then(data => {
+        if (Array.isArray(data)) setFinanceState(data);
+      }).catch(err => console.warn("Gagal memuat finance:", err)),
       fetchApi('/api/incubator/status').then(status => console.log("Status inkubator dari API:", status)).catch(err => console.warn("Gagal memuat status inkubator:", err)),
     ]);
   }, []);
