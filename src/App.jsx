@@ -9,7 +9,6 @@ import { fetchApi } from "./utils/api.js";
 import DashboardPage from "./pages/DashboardPage.jsx";
 const CctvPage = lazy(() => import("./pages/CctvPage.jsx"));
 const EggPage = lazy(() => import("./pages/EggPage.jsx"));
-const SensorHistoryPage = lazy(() => import("./pages/SensorHistoryPage.jsx"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage.jsx"));
 const AccountsPage = lazy(() => import("./pages/AccountsPage.jsx"));
 const SalesPage = lazy(() => import("./pages/SalesPage.jsx"));
@@ -282,15 +281,6 @@ export default function App() {
       const nowIso = new Date().toISOString();
       const temp = parseFloat(telemetry.temp);
       const hum = parseFloat(telemetry.humidity);
-      
-      // Simpan log telemetri
-      const logData = { timestamp: nowIso, temperature: temp, humidity: hum };
-      fetchApi(`/api/incubator/telemetry-logs`, {
-        method: "POST",
-        body: JSON.stringify(logData),
-      }).catch((err) => {
-        console.error("Gagal menyimpan log telemetri ke database:", err);
-      });
 
       // Sinkronisasi status inkubator terkini
       const lampuStatus = temp >= 37.0 && temp <= 38.5 ? "ON" : "OFF";
@@ -391,9 +381,6 @@ export default function App() {
         break;
       case "anakan":
         content = <ChicksPage {...props} />;
-        break;
-      case "histori":
-        content = <SensorHistoryPage {...props} />;
         break;
       case "pengaturan":
         content = (

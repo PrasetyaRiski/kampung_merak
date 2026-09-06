@@ -101,8 +101,8 @@ export const ROLES = {
   admin: {
     label: "Pemilik / Admin Utama",
     short: "Admin",
-    desc: "Akses penuh untuk monitoring, kontrol, konfigurasi, akun, data telur, kamera CCTV, dan histori.",
-    allowed: ["dashboard", "kamera", "telur", "indukan", "anakan", "katalog", "histori", "pengaturan", "akun", "penjualan", "finance"],
+    desc: "Akses penuh untuk monitoring, kontrol, konfigurasi, akun, data telur, kamera CCTV, dan keuangan.",
+    allowed: ["dashboard", "kamera", "telur", "indukan", "anakan", "katalog", "pengaturan", "akun", "penjualan", "finance"],
     canControl: true,
     canConfigure: true,
     canConfigureCctv: true,
@@ -117,8 +117,8 @@ export const ROLES = {
   operator: {
     label: "Operator / Teknisi Inkubator",
     short: "Operator",
-    desc: "Dapat mengelola operasional telur, CCTV, histori, kontrol perangkat, dan parameter mesin inkubator. Tidak dapat mengelola akun.",
-    allowed: ["dashboard", "kamera", "telur", "indukan", "anakan", "katalog", "histori", "pengaturan"],
+    desc: "Dapat mengelola operasional telur, CCTV, kontrol perangkat, dan parameter mesin inkubator. Tidak dapat mengelola akun.",
+    allowed: ["dashboard", "kamera", "telur", "indukan", "anakan", "katalog", "pengaturan"],
     canControl: true,
     canConfigure: true,
     canConfigureCctv: true,
