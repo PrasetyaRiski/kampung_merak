@@ -20,7 +20,7 @@ const menuGroups = [
     items: [
       { id: "penjualan", label: "Penjualan Telur", subtitle: "Transaksi penjualan", icon: "shopping_cart" },
       { id: "finance", label: "Arus Kas Keuangan", subtitle: "Pemasukan & pengeluaran", icon: "account_balance_wallet" },
-      { id: "histori", label: "Histori Sensor", subtitle: "Log telemetri", icon: "monitoring" },
+      { id: "histori", label: "Histori Sensor", subtitle: "Log rotasi telur", icon: "monitoring" },
       { id: "pengaturan", label: "Pengaturan", subtitle: "MQTT, threshold", icon: "settings" },
       { id: "akun", label: "Akun Pengguna", subtitle: "Admin saja", icon: "manage_accounts" },
     ],

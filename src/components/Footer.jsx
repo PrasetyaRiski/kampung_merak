@@ -12,7 +12,7 @@ const NAV_OPERASIONAL = [
 const NAV_SISTEM = [
   { id: "penjualan", label: "Penjualan Telur", icon: "shopping_cart" },
   { id: "finance", label: "Arus Kas Keuangan", icon: "account_balance_wallet" },
-  { id: "histori", label: "Histori Telemetri Sensor", icon: "monitoring" },
+  { id: "histori", label: "Histori Sensor & Rotasi", icon: "monitoring" },
   { id: "pengaturan", label: "Pengaturan Sistem", icon: "settings" },
 ];
 
