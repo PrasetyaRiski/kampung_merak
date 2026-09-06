@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import EmptyState from "./EmptyState.jsx";
+import { fetchApi } from "../utils/api.js";
 
 function getSlotStyle(egg) {
   if (!egg) return "bg-alpine-low text-ink-outline border-alpine-high hover:border-ink-outline-variant";
@@ -21,7 +23,28 @@ const LEGEND = [
   { cls: "bg-alpine-low border-alpine-high", label: "Kosong" },
 ];
 
-export default function EggTray({ eggs }) {
+export default function EggTray() {
+  const [eggs, setEggs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const data = await fetchApi("/api/eggs");
+        if (mounted) setEggs(Array.isArray(data) ? data : []);
+      } catch {
+        // Gagal fetch, tampilkan kosong
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    // Refresh setiap 15 detik agar sinkron dengan EggPage
+    const interval = setInterval(load, 15000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
+
   const bySlot = new Map(eggs.map((egg) => [Number(egg.slot), egg]));
 
   return (
@@ -38,40 +61,49 @@ export default function EggTray({ eggs }) {
         <span className="km-badge km-badge-neutral font-mono text-[10px]">50 SLOT</span>
       </div>
 
-      {/* Tray grid */}
-      <div
-        className="grid gap-1.5"
-        style={{ gridTemplateColumns: "repeat(10, minmax(0, 1fr))" }}
-        role="grid"
-        aria-label="Visual nampan 50 slot telur"
-      >
-        {Array.from({ length: 50 }, (_, i) => {
-          const slot = i + 1;
-          const egg = bySlot.get(slot);
-          return (
-            <div
-              key={slot}
-              title={
-                egg
-                  ? `Slot ${slot}: ${egg.id} | ${egg.fertilitas} | ${egg.akhir}`
-                  : `Slot ${slot} kosong`
-              }
-              role="gridcell"
-              aria-label={egg ? `Slot ${slot}: ${egg.fertilitas}` : `Slot ${slot} kosong`}
-              className={`flex aspect-square items-center justify-center rounded-lg border font-mono text-[9px] sm:text-[10px] font-bold transition-transform duration-100 hover:scale-110 cursor-default ${getSlotStyle(egg)}`}
-            >
-              {slot}
-            </div>
-          );
-        })}
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-8 text-ink-secondary">
+          <span className="material-symbols-outlined animate-spin mr-2 text-[18px]">autorenew</span>
+          <span className="font-body text-sm">Memuat data telur...</span>
+        </div>
+      ) : (
+        <>
+          {/* Tray grid */}
+          <div
+            className="grid gap-1.5"
+            style={{ gridTemplateColumns: "repeat(10, minmax(0, 1fr))" }}
+            role="grid"
+            aria-label="Visual nampan 50 slot telur"
+          >
+            {Array.from({ length: 50 }, (_, i) => {
+              const slot = i + 1;
+              const egg = bySlot.get(slot);
+              return (
+                <div
+                  key={slot}
+                  title={
+                    egg
+                      ? `Slot ${slot}: ${egg.id} | ${egg.fertilitas} | ${egg.akhir}`
+                      : `Slot ${slot} kosong`
+                  }
+                  role="gridcell"
+                  aria-label={egg ? `Slot ${slot}: ${egg.fertilitas}` : `Slot ${slot} kosong`}
+                  className={`flex aspect-square items-center justify-center rounded-lg border font-mono text-[9px] sm:text-[10px] font-bold transition-transform duration-100 hover:scale-110 cursor-default ${getSlotStyle(egg)}`}
+                >
+                  {slot}
+                </div>
+              );
+            })}
+          </div>
 
-      {eggs.length === 0 && (
-        <EmptyState
-          icon="egg_alt"
-          title="Belum ada telur"
-          desc="Tambahkan telur melalui halaman Data Telur untuk mengisi nampan."
-        />
+          {eggs.length === 0 && (
+            <EmptyState
+              icon="egg_alt"
+              title="Belum ada telur"
+              desc="Tambahkan telur melalui halaman Data Telur untuk mengisi nampan."
+            />
+          )}
+        </>
       )}
 
       {/* Legend */}

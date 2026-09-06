@@ -227,7 +227,7 @@ export default function DashboardPage({
           role={role}
           publish={publish}
         />
-        <EggTray eggs={eggs} />
+        <EggTray />
       </div>
     </div>
   );
