@@ -134,13 +134,13 @@ export default function CctvPage({ role, cctvUrl }) {
             {/* Overlay Grid Line Aesthetic */}
             <div className="absolute inset-0 pointer-events-none bg-cctv-grid opacity-10" />
             <div className="absolute bottom-3 left-4 text-[10px] font-mono text-white bg-black/40 px-2 py-0.5 rounded backdrop-blur-[2px] tracking-wider select-none">
-              INC-CAM-01 | AUTO OVERLAY ON
+              INC-CAM-01 | LIVE MONITORING
             </div>
           </div>
 
           <div className="p-4 bg-alpine-low border-t border-alpine-high flex-1 flex flex-col justify-between">
             <p className="text-xs text-ink-secondary leading-relaxed">
-              Kamera Bardi yang menatap langsung ke nampan pengeraman telur. Pemicu OpenCV berjalan otomatis untuk mendeteksi perubahan kontur atau gerakan.
+              Kamera Bardi yang menatap langsung ke nampan pengeraman telur secara real-time.
             </p>
             <div className="mt-3 pt-3 border-t border-alpine-high/60 flex items-center justify-between text-[10px] font-mono text-ink-outline">
               <span>IP: {dynamicIp}</span>
