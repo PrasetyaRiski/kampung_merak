@@ -96,8 +96,16 @@ export default function MqttCommandPanel({ telemetry, publish, role }) {
           <h2 className="mt-1 font-display text-xl font-extrabold text-ink-primary">
             Panel Kontrol Perangkat Inkubator
           </h2>
+          <p className="mt-1.5 font-body text-xs text-ink-secondary flex items-center gap-1.5">
+            <Icon name="verified_user" className="text-[15px] text-teal-iridescence" />
+            <span>Hanya <strong>Admin</strong> dan <strong>Operator</strong> yang dapat mengontrol perangkat & mengubah parameter.</span>
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="km-badge km-badge-warning font-mono text-[10px] flex items-center gap-1">
+            <Icon name="lock" className="text-[12px]" />
+            HANYA ADMIN & OPERATOR
+          </span>
           {telemetry.statusSensor && (
             <span className={`km-badge ${telemetry.statusSensor === "OK" ? "km-badge-success" : telemetry.statusSensor === "ERROR" ? "km-badge-danger" : "km-badge-neutral"} font-mono text-[10px]`}>
               SHT30: {telemetry.statusSensor}
@@ -105,6 +113,14 @@ export default function MqttCommandPanel({ telemetry, publish, role }) {
           )}
           <span className="km-badge km-badge-neutral font-mono text-[10px]">MQTT LIVE</span>
         </div>
+      </div>
+
+      {/* Info Banner Akses */}
+      <div className="flex items-center gap-2.5 rounded-xl border border-alpine-high bg-alpine-low/60 px-4 py-2.5 text-xs text-ink-secondary">
+        <Icon name="info" className="text-[16px] text-teal-iridescence shrink-0" />
+        <span>
+          <strong>Keterangan Akses:</strong> Tombol picu aktuator (Mist & Putar Rak), mode lampu, serta pengubahan ambang batas suhu/kelembaban hanya dapat dijalankan oleh <strong>Admin</strong> dan <strong>Operator</strong>. Akun <strong>Viewer</strong> hanya memiliki akses pemantauan (read-only).
+        </span>
       </div>
 
       {feedbackToast && (
@@ -263,16 +279,17 @@ export default function MqttCommandPanel({ telemetry, publish, role }) {
 
       {/* Threshold Configuration Section */}
       <div className="rounded-2xl border border-alpine-high p-5 bg-alpine-low/50 space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="font-display text-base font-bold text-ink-primary">Pengaturan Ambang Batas ESP32</h3>
             <p className="font-body text-xs text-ink-secondary">
-              Kirim parameter baru ke mikrokontroler via topik MQTT <span className="font-mono text-teal-iridescence">iot/cmd/*</span>.
+              Kirim parameter baru ke mikrokontroler via topik MQTT <span className="font-mono text-teal-iridescence">iot/cmd/*</span>. <span className="text-amber-600 dark:text-amber-400 font-semibold">(Hanya Admin & Operator yang bisa mengubah)</span>
             </p>
           </div>
-          {configurationLocked && (
-            <span className="km-badge km-badge-warning text-[10px] font-mono">LOCKED (VIEWER)</span>
-          )}
+          <span className="km-badge km-badge-warning text-[10px] font-mono flex items-center gap-1">
+            <Icon name="lock" className="text-[12px]" />
+            HANYA ADMIN & OPERATOR
+          </span>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
