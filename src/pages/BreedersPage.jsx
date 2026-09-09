@@ -46,19 +46,6 @@ function getStatusVariant(status) {
   return "neutral";
 }
 
-function generateBreederId(generasi, parentJantanId, existingBreeders) {
-  const prefix = `MRK-${generasi}`;
-  // Count existing breeders with same generasi to get next number
-  const sameGen = existingBreeders.filter((b) => b.id.startsWith(prefix));
-  const nextNum = String(sameGen.length + 1).padStart(3, "0");
-  const baseId = `${prefix}-${nextNum}`;
-  // Append parent jantan ID for lineage if provided
-  if (parentJantanId) {
-    return `${baseId}-${parentJantanId}`;
-  }
-  return baseId;
-}
-
 export default function BreedersPage({ role }) {
   const [breeders, setBreeders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -127,9 +114,8 @@ export default function BreedersPage({ role }) {
         setBreeders((curr) => curr.map((b) => (b.id === editingId ? updated : b)));
         setEditingId(null);
       } else {
-        // Create
-        const newId = generateBreederId(formData.generasi, formData.parent_jantan_id, breeders);
-        const payload = { ...formData, id: newId };
+        // Create: tanpa ID, server generate silsilah otomatis (JB01/BB01 atau {Jantan}{Betina}-{NN})
+        const payload = { ...formData };
         if (!payload.parent_jantan_id) payload.parent_jantan_id = null;
         if (!payload.parent_betina_id) payload.parent_betina_id = null;
         if (!payload.tanggal_lahir) payload.tanggal_lahir = null;
@@ -257,7 +243,7 @@ export default function BreedersPage({ role }) {
                 />
               </FormField>
               <FormField label="Jenis Kelamin" htmlFor="b-jk" required>
-                <select id="b-jk" required value={formData.jenis_kelamin} onChange={(e) => handleChange("jenis_kelamin", e.target.value)} className="km-input">
+                <select id="b-jk" required value={formData.jenis_kelamin} onChange={(e) => handleChange("jenis_kelamin", e.target.value)} className="km-input" disabled={!!editingId} title={editingId ? "Jenis kelamin dikunci (prefix silsilah)" : ""}>
                   <option value="Jantan">Jantan</option>
                   <option value="Betina">Betina</option>
                 </select>
@@ -296,7 +282,7 @@ export default function BreedersPage({ role }) {
                 <input id="b-tgl" type="date" value={formData.tanggal_lahir} onChange={(e) => handleChange("tanggal_lahir", e.target.value)} className="km-input font-mono text-sm" />
               </FormField>
               <FormField label="Parent Jantan" htmlFor="b-pj">
-                <select id="b-pj" value={formData.parent_jantan_id} onChange={(e) => handleChange("parent_jantan_id", e.target.value)} className="km-input">
+                <select id="b-pj" value={formData.parent_jantan_id} onChange={(e) => handleChange("parent_jantan_id", e.target.value)} className="km-input" disabled={!!editingId} title={editingId ? "Parent dikunci (prefix silsilah)" : ""}>
                   <option value="">— Tidak ada —</option>
                   {jantanList.map((j) => (
                     <option key={j.id} value={j.id}>{j.id} — {j.nama || "Tanpa nama"}</option>
@@ -304,7 +290,7 @@ export default function BreedersPage({ role }) {
                 </select>
               </FormField>
               <FormField label="Parent Betina" htmlFor="b-pb">
-                <select id="b-pb" value={formData.parent_betina_id} onChange={(e) => handleChange("parent_betina_id", e.target.value)} className="km-input">
+                <select id="b-pb" value={formData.parent_betina_id} onChange={(e) => handleChange("parent_betina_id", e.target.value)} className="km-input" disabled={!!editingId} title={editingId ? "Parent dikunci (prefix silsilah)" : ""}>
                   <option value="">— Tidak ada —</option>
                   {betinaList.map((b) => (
                     <option key={b.id} value={b.id}>{b.id} — {b.nama || "Tanpa nama"}</option>
@@ -325,11 +311,17 @@ export default function BreedersPage({ role }) {
               </div>
             </FormGrid>
 
-            {/* Preview generated ID */}
+            {/* Info ID otomatis */}
             {!editingId && (
               <div className="rounded-lg border border-dashed border-alpine-high bg-alpine-low/30 px-4 py-2.5 text-sm text-ink-secondary flex items-center gap-2">
                 <Icon name="fingerprint" className="text-[18px] text-teal-600" />
-                <span>ID akan di-generate: <strong className="font-mono text-ink-primary">{generateBreederId(formData.generasi, formData.parent_jantan_id, breeders)}</strong></span>
+                <span>ID silsilah dibuat otomatis oleh server (F0: JB01/BB01, anak: {"{Jantan}{Betina}-{NN}"}).</span>
+              </div>
+            )}
+            {editingId && (
+              <div className="rounded-lg border border-dashed border-alpine-high bg-alpine-low/30 px-4 py-2.5 text-sm text-ink-secondary flex items-center gap-2">
+                <Icon name="lock" className="text-[18px] text-teal-600" />
+                <span>ID <strong className="font-mono text-ink-primary">{editingId}</strong> — prefix silsilah terkunci, hanya data lain yang bisa diubah.</span>
               </div>
             )}
 

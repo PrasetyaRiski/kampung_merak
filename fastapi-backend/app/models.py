@@ -6,9 +6,36 @@ class Egg(Base):
 
     id = Column(String(50), primary_key=True, index=True)
     slot = Column(Integer, unique=True, index=True, nullable=False)
+    induk_jantan_id = Column(String(50), nullable=True) # silsilah: prefix ID telur, null agar data lama aman
+    induk_betina_id = Column(String(50), nullable=True) # silsilah: prefix ID telur, null agar data lama aman
     tanggalMasuk = Column(String(50), nullable=False) # Store as ISO date string to match client-side JS format
     fertilitas = Column(String(50), default="Belum dicek") # Fertil, Infertil, Belum dicek
     akhir = Column(String(50), default="Proses") # Menetas, Gagal, Proses
+    catatan = Column(Text, nullable=True)
+
+class Breeder(Base):
+    __tablename__ = "breeders"
+
+    id = Column(String(50), primary_key=True, index=True) # F0: JB01/BB01, anak: {Jantan}{Betina}-{NN}
+    nama = Column(String(255), nullable=True)
+    jenis_kelamin = Column(String(20), nullable=False) # jantan | betina
+    parent_jantan_id = Column(String(50), nullable=True) # null untuk F0
+    parent_betina_id = Column(String(50), nullable=True) # null untuk F0
+    generasi = Column(String(20), nullable=True) # F0, F1, ... (display)
+    varian_warna = Column(String(100), nullable=True) # display
+    status = Column(String(50), nullable=True) # breeding | resting | ready_for_sale (display)
+    foto_url = Column(String(500), nullable=True) # display
+    catatan = Column(Text, nullable=True)
+
+class Chick(Base):
+    __tablename__ = "chicks"
+
+    id = Column(String(50), primary_key=True, index=True) # {ID_Telur}-C{NN}
+    egg_id = Column(String(50), nullable=False) # silsilah: prefix ID anak
+    induk_jantan_id = Column(String(50), nullable=True) # auto-isi dari egg saat create (read-only)
+    induk_betina_id = Column(String(50), nullable=True) # auto-isi dari egg saat create (read-only)
+    tanggal_menetas = Column(String(50), nullable=False) # ISO date string, konsisten dgn Egg
+    status = Column(String(50), default="newborn") # newborn | growing | ready_for_sale | sold
     catatan = Column(Text, nullable=True)
 
 class Sale(Base):

@@ -29,7 +29,7 @@ Panduan ini digunakan oleh AI coding agent (Claude Code) untuk membangun dan men
 - Endpoint GET untuk data operasional (Breeder, Egg, Chick, Incubator Settings/Status/Log, Sales) **tidak butuh JWT** — cukup API Key valid, siapa saja dengan key resmi bisa akses.
 - Endpoint GET untuk data sensitif (Dashboard Summary, Notifikasi/Alerts, Finance, User Management) **wajib API Key + JWT**, hanya bisa diakses `pemilik` atau `staff` (Finance & User Management: `pemilik` saja).
 - Setiap endpoint yang mengubah data (POST/PUT/DELETE) **selalu wajib API Key + JWT** dan dicek role-nya lewat `require_role(...)` — tidak ada modul yang bisa diubah tanpa login.
-- Semua ID entity pakai format prefix + nomor urut (contoh: `MRK-F0-001`, `EGG-001`, `CHK-001`, `SLS-001`, `FIN-001`, `USR-001`). Prefix disesuaikan per module.
+- Semua ID silsilah dibuat server dan membentuk rantai induk → telur → anak: Breeder F0 `JB01`/`BB01`, Breeder anak & Telur `{Jantan}{Betina}-{NN}` (contoh `JB01BB02-01`), Anakan `{ID_Telur}-C{NN}` (contoh `JB01BB02-01-C01`). Field `id` opsional saat POST (kosong = auto-generate per pasangan/per telur). ID lama (`MRK-*`, `EGG-*`, `CHK-*`) tetap diterima (dilewati validasi prefix).
 - Field tanggal disimpan sebagai string ISO (`YYYY-MM-DD` atau `YYYY-MM-DD HH:MM:SS`), konsisten dengan schema existing.
 - Response error pakai HTTP status standar: `401` (belum login), `403` (role tidak punya izin), `404` (data tidak ditemukan), `422` (validasi gagal).
 
@@ -74,7 +74,7 @@ User
 ### 4.2 Breeder (Indukan)
 ```
 Breeder
-- id: str (PK, "MRK-F0-001")
+- id: str (PK, F0: "JB01"/"BB01"; anak: "JB01BB02-01")
 - nama: str (opsional, boleh kosong)
 - jenis_kelamin: enum(jantan, betina)
 - tanggal_lahir: date (nullable)
@@ -96,7 +96,7 @@ Breeder
 ### 4.3 Egg (Telur) — update dari schema existing
 ```
 Egg
-- id: str (PK, "EGG-001")
+- id: str (PK, "JB01BB02-01" = {induk_jantan}{induk_betina}-{nomor})
 - slot: int (unique, 1-100 — posisi fisik di inkubator)
 - induk_jantan_id: str (FK -> Breeder.id, required)
 - induk_betina_id: str (FK -> Breeder.id, required)
@@ -109,7 +109,7 @@ Egg
 ### 4.4 Chick (Anak Merak) — baru
 ```
 Chick
-- id: str (PK, "CHK-001")
+- id: str (PK, "JB01BB02-01-C01" = {egg_id}-C{nomor})
 - egg_id: str (FK -> Egg.id)  # asal telur, otomatis warisi induk_jantan_id/induk_betina_id dari sini
 - tanggal_menetas: date
 - berat_awal: numeric(6,2)  # gram
@@ -263,6 +263,7 @@ Dibuat otomatis oleh sistem saat data telemetry masuk dan nilainya keluar dari `
 2. **Breeder performance**: jangan simpan sebagai kolom statis, hitung on-the-fly via query saat endpoint `/api/breeders/compare` atau `/api/breeders/{id}` dipanggil (join ke Egg dan Chick).
 3. **Dashboard summary**: response harus beda tergantung role — field `finance_summary` hanya muncul kalau requester adalah `pemilik`.
 4. **Chick auto-link**: saat create Chick, ambil `induk_jantan_id` dan `induk_betina_id` dari Egg terkait (via `egg_id`), simpan sebagai reference (bukan duplikasi wajib, tapi bisa di-denormalisasi untuk query cepat — keputusan teknis di tangan agent).
+4b. **Aturan edit ID silsilah**: field parent/induk (`jenis_kelamin`, `parent_*`, `induk_*`, `egg_id`) terkunci saat PUT — ganti prefix ditolak `422`. Rename hanya suffix nomor; ditolak `400` bila ID sudah dipakai atau objek sudah punya turunan (telur punya anakan, breeder punya turunan). Detail implementasi: `fastapi-backend/app/silsilah.py`.
 5. **Dashboard & data lain**: manual refresh saja, TIDAK perlu WebSocket.
 6. **Notifikasi**: TIDAK perlu push server (Firebase/OneSignal). Cukup simpan di DB, mobile app polling endpoint `/api/alerts` sendiri.
 
