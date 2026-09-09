@@ -118,6 +118,8 @@ def read_breeders(db: Session = Depends(get_db)):
 
 def _breeder_dict(b):
     return {"id": b.id, "nama": b.nama, "jenis_kelamin": b.jenis_kelamin,
+            "generasi": b.generasi or "", "varian_warna": b.varian_warna or "",
+            "status": b.status or "", "foto_url": b.foto_url,
             "parent_jantan_id": b.parent_jantan_id, "parent_betina_id": b.parent_betina_id,
             "catatan": b.catatan}
 
@@ -136,7 +138,8 @@ def compare_breeders(ids: str, db: Session = Depends(get_db)):
         egg_ids = [t.id for t in telur]
         anak = db.query(models.Chick).filter(models.Chick.egg_id.in_(egg_ids)).count() if egg_ids else 0
         out.append({"id": b.id, "nama": b.nama, "jenis_kelamin": b.jenis_kelamin,
-                    "generasi": "", "varian_warna": "", "status": "",
+                    "generasi": b.generasi or "", "varian_warna": b.varian_warna or "",
+                    "status": b.status or "",
                     "total_telur": len(telur),
                     "persentase_fertil": round(fertil / dicek * 100, 1) if dicek else 0.0,
                     "jumlah_anakan": anak})
@@ -262,7 +265,8 @@ def read_chick(chick_id: str, db: Session = Depends(get_db)):
 
 @app.post("/api/chicks", response_model=schemas.ChickResponse)
 def create_chick(c: schemas.ChickCreate, db: Session = Depends(get_db)):
-    if not db.query(models.Egg).filter(models.Egg.id == c.egg_id).first():
+    egg = db.query(models.Egg).filter(models.Egg.id == c.egg_id).first()
+    if not egg:
         raise HTTPException(status_code=404, detail="Telur asal tidak ditemukan")
     new_id = (c.id or "").strip()
     if not new_id:
@@ -284,6 +288,8 @@ def create_chick(c: schemas.ChickCreate, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="ID anakan sudah digunakan")
     data = c.dict()
     data["id"] = new_id
+    data["induk_jantan_id"] = egg.induk_jantan_id
+    data["induk_betina_id"] = egg.induk_betina_id
     nc = models.Chick(**data)
     db.add(nc)
     db.commit()

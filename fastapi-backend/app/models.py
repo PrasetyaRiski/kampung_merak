@@ -21,6 +21,10 @@ class Breeder(Base):
     jenis_kelamin = Column(String(20), nullable=False) # jantan | betina
     parent_jantan_id = Column(String(50), nullable=True) # null untuk F0
     parent_betina_id = Column(String(50), nullable=True) # null untuk F0
+    generasi = Column(String(20), nullable=True) # F0, F1, ... (display)
+    varian_warna = Column(String(100), nullable=True) # display
+    status = Column(String(50), nullable=True) # breeding | resting | ready_for_sale (display)
+    foto_url = Column(String(500), nullable=True) # display
     catatan = Column(Text, nullable=True)
 
 class Chick(Base):
@@ -28,6 +32,8 @@ class Chick(Base):
 
     id = Column(String(50), primary_key=True, index=True) # {ID_Telur}-C{NN}
     egg_id = Column(String(50), nullable=False) # silsilah: prefix ID anak
+    induk_jantan_id = Column(String(50), nullable=True) # auto-isi dari egg saat create (read-only)
+    induk_betina_id = Column(String(50), nullable=True) # auto-isi dari egg saat create (read-only)
     tanggal_menetas = Column(String(50), nullable=False) # ISO date string, konsisten dgn Egg
     status = Column(String(50), default="newborn") # newborn | growing | ready_for_sale | sold
     catatan = Column(Text, nullable=True)

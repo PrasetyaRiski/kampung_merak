@@ -26,6 +26,10 @@ class BreederBase(BaseModel):
     jenis_kelamin: str # jantan | betina
     parent_jantan_id: Optional[str] = None # null untuk F0
     parent_betina_id: Optional[str] = None # null untuk F0
+    generasi: Optional[str] = None # display: F0, F1, ...
+    varian_warna: Optional[str] = None # display
+    status: Optional[str] = None # display
+    foto_url: Optional[str] = None # display
     catatan: Optional[str] = None
 
 class BreederCreate(BreederBase):
@@ -49,6 +53,8 @@ class ChickCreate(ChickBase):
 
 class ChickResponse(ChickBase):
     id: str
+    induk_jantan_id: Optional[str] = None # auto-isi dari egg (read-only)
+    induk_betina_id: Optional[str] = None # auto-isi dari egg (read-only)
 
     class Config:
         orm_mode = True
