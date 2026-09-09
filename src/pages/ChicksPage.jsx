@@ -84,9 +84,8 @@ export default function ChicksPage({ role }) {
         setChicks((curr) => curr.map((c) => (c.id === editingId ? updated : c)));
         setEditingId(null);
       } else {
-        const nextNum = String(chicks.length + 1).padStart(3, "0");
-        const newId = `CHK-${nextNum}`;
-        const payload = { ...formData, id: newId, berat_awal: Number(formData.berat_awal) };
+        // Create: tanpa ID, server generate silsilah {egg_id}-C{NN} otomatis
+        const payload = { ...formData, berat_awal: Number(formData.berat_awal) };
         if (!payload.foto_url) payload.foto_url = null;
         if (!payload.catatan) payload.catatan = null;
 
@@ -172,7 +171,9 @@ export default function ChicksPage({ role }) {
                   value={formData.egg_id}
                   onChange={(e) => handleChange("egg_id", e.target.value)}
                   className="km-input font-mono"
-                  placeholder="Contoh: EGG-2026-001"
+                  placeholder="Contoh: JB01BB02-01"
+                  disabled={!!editingId}
+                  title={editingId ? "Telur asal dikunci (identitas silsilah)" : ""}
                 />
               </FormField>
               <FormField label="Tanggal Menetas" htmlFor="c-tgl" required>
