@@ -6,8 +6,9 @@ import ConnectionPanel from "../components/ConnectionPanel.jsx";
 import { fetchApi } from "../utils/api.js";
 import { ROLES } from "../data/constants.js";
 import Icon from "../components/Icon.jsx";
+import MqttCommandPanel from "../components/MqttCommandPanel.jsx";
 
-export default function SettingsPage({ role, activeVariety, setActiveVariety, mqttUrl, clientId, connection, cctvUrl, setCctvUrl }) {
+export default function SettingsPage({ role, activeVariety, setActiveVariety, mqttUrl, clientId, connection, cctvUrl, setCctvUrl, telemetry, publish }) {
   if (!ROLES[role].allowed.includes("pengaturan")) {
     return <AccessDenied role={role} feature="Pengaturan Sistem" />;
   }
@@ -109,6 +110,9 @@ export default function SettingsPage({ role, activeVariety, setActiveVariety, mq
       </SectionCard>
 
       <ConnectionPanel mqttUrl={mqttUrl} clientId={clientId} connection={connection} />
+      {telemetry && publish && (
+        <MqttCommandPanel telemetry={telemetry} publish={publish} role={role} />
+      )}
 
       <SectionCard title="Konfigurasi Kamera CCTV & Gateway RTSP">
         <div className="space-y-4">

@@ -12,6 +12,10 @@ node_modules/
 jspm_packages/
 __pycache__/
 *.pyc
+venv/
+.venv/
+*/venv/
+*/.venv/
 
 # Build outputs
 # dist/ (di-track agar server STB langsung dapat hasil build tanpa perlu build node di STB)

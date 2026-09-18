@@ -25,6 +25,7 @@ export function useMqttBridge() {
     statusLamp: "UNKNOWN",
     statusMotor: "UNKNOWN",
     statusMist: "UNKNOWN",
+    statusSensor: "UNKNOWN",
   });
   const [temperatureTrend, setTemperatureTrend] = useState(DEFAULT_TREND);
   const [humidityTrend, setHumidityTrend] = useState(DEFAULT_HUMIDITY_TREND);
@@ -135,6 +136,8 @@ export function useMqttBridge() {
         setTelemetry((current) => ({ ...current, statusMotor: normalizeStatus(payload) }));
       if (topic === MQTT_TOPICS.statusMist)
         setTelemetry((current) => ({ ...current, statusMist: normalizeStatus(payload) }));
+      if (topic === MQTT_TOPICS.statusSensor)
+        setTelemetry((current) => ({ ...current, statusSensor: payload.toUpperCase() }));
     });
 
     return () => {

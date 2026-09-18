@@ -244,6 +244,9 @@ export default function IncubationPage({
               <span className="rounded-full bg-teal-container/20 px-3 py-1 text-sm font-semibold text-teal-iridescence">Lampu: {telemetry.statusLamp}</span>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">Motor: {telemetry.statusMotor}</span>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">Mist: {telemetry.statusMist}</span>
+              {telemetry.statusSensor && (
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800">SHT30: {telemetry.statusSensor}</span>
+              )}
             </div>
           </SectionCard>
 

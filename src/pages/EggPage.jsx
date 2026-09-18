@@ -7,7 +7,7 @@ import StatusBadge, { getFertilitasVariant, getEggStatusVariant } from "../compo
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import Icon from "../components/Icon.jsx";
-import { ROLES, makeId } from "../data/constants.js";
+import { ROLES } from "../data/constants.js";
 import { fetchApi } from "../utils/api.js";
 
 const EMPTY_FORM = {
@@ -81,10 +81,9 @@ export default function EggPage({ role }) {
         setEggs((curr) => curr.map((egg) => (egg.id === editingId ? updated : egg)));
         setEditingId(null);
       } else {
-        const newId = makeId("EGG");
+        // Create: tanpa ID, server generate silsilah {Jantan}{Betina}-{NN} otomatis
         const payload = {
           ...formData,
-          id: newId,
           slot: parseInt(formData.slot, 10),
           induk_jantan_id: formData.induk_jantan_id || null,
           induk_betina_id: formData.induk_betina_id || null,
@@ -214,7 +213,9 @@ export default function EggPage({ role }) {
                   value={formData.induk_jantan_id}
                   onChange={(e) => handleChange("induk_jantan_id", e.target.value)}
                   className="km-input font-mono text-sm uppercase"
-                  placeholder="Contoh: MALE-01"
+                  placeholder="Contoh: JB01"
+                  disabled={!!editingId}
+                  title={editingId ? "Induk dikunci (prefix silsilah)" : ""}
                 />
               </FormField>
               <FormField label="ID Induk Betina" htmlFor="induk_betina_id">
@@ -223,7 +224,9 @@ export default function EggPage({ role }) {
                   value={formData.induk_betina_id}
                   onChange={(e) => handleChange("induk_betina_id", e.target.value)}
                   className="km-input font-mono text-sm uppercase"
-                  placeholder="Contoh: FEMALE-01"
+                  placeholder="Contoh: BB02"
+                  disabled={!!editingId}
+                  title={editingId ? "Induk dikunci (prefix silsilah)" : ""}
                 />
               </FormField>
               <FormField label="Status Akhir" htmlFor="akhir" required>

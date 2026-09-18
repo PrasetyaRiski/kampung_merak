@@ -7,10 +7,11 @@ export const MQTT_TOPICS = {
   statusLamp: "iot/telemetry/status_lamp",
   statusMotor: "iot/telemetry/status_motor",
   statusMist: "iot/telemetry/status_mist",
+  statusSensor: "iot/telemetry/status_sensor",
   lampThresholdOn: "iot/cmd/lamp_thresh_on",
   lampThresholdOff: "iot/cmd/lamp_thresh_off",
-  humidityThresholdLow: "iot/cmd/humidity_thresh_low",
-  humidityThresholdHigh: "iot/cmd/humidity_thresh_high",
+  humidityThresholdLow: "iot/cmd/humid_thresh_low",
+  humidityThresholdHigh: "iot/cmd/humid_thresh_high",
   lampMode: "iot/cmd/lamp_mode",
   motorTurns: "iot/cmd/motor_turns",
   motorTrigger: "iot/cmd/motor_trigger",
@@ -25,6 +26,7 @@ export const SUBSCRIBE_TOPICS = [
   MQTT_TOPICS.statusLamp,
   MQTT_TOPICS.statusMotor,
   MQTT_TOPICS.statusMist,
+  MQTT_TOPICS.statusSensor,
 ];
 
 // ========================

@@ -9,6 +9,8 @@ import AlertPanel from "../components/AlertPanel.jsx";
 import EggTray from "../components/EggTray.jsx";
 import SystemLogs from "../components/SystemLogs.jsx";
 import VarietyToggle from "../components/VarietyToggle.jsx";
+import Icon from "../components/Icon.jsx";
+import MqttCommandPanel from "../components/MqttCommandPanel.jsx";
 import { formatNumber, VARIETAS } from "../data/constants.js";
 import { fetchApi } from "../utils/api.js";
 
@@ -136,6 +138,81 @@ export default function DashboardPage({
         />
       </div>
 
+      {/* Aktuator & Status Perangkat ESP32 */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        {/* Status Lampu Pemanas */}
+        <div className="km-card p-4 bg-surface flex items-center justify-between border-l-4 border-l-amber-500 shadow-sm transition-all">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+              telemetry.statusLamp === "ON"
+                ? "bg-amber-100 text-amber-600 shadow-[0_0_12px_rgba(245,158,11,0.35)] animate-pulse"
+                : "bg-alpine-low text-ink-outline"
+            }`}>
+              <Icon name="lightbulb" className="text-[22px]" />
+            </div>
+            <div>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-ink-secondary">Pemanas (PIN 25)</p>
+              <p className="font-display text-sm font-bold text-ink-primary">
+                {telemetry.statusLamp === "ON" ? "Lampu Menyala" : telemetry.statusLamp === "OFF" ? "Lampu Mati" : "Menunggu Data"}
+              </p>
+            </div>
+          </div>
+          <span className={`km-badge ${
+            telemetry.statusLamp === "ON" ? "km-badge-warning" : "km-badge-neutral"
+          } font-mono text-xs font-bold`}>
+            {telemetry.statusLamp || "OFF"}
+          </span>
+        </div>
+
+        {/* Status Mist Maker */}
+        <div className="km-card p-4 bg-surface flex items-center justify-between border-l-4 border-l-teal-iridescence shadow-sm transition-all">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+              telemetry.statusMist === "ON"
+                ? "bg-teal-100 text-teal-600 shadow-[0_0_12px_rgba(20,184,166,0.35)] animate-pulse"
+                : "bg-alpine-low text-ink-outline"
+            }`}>
+              <Icon name="water_drop" className="text-[22px]" />
+            </div>
+            <div>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-ink-secondary">Mist Maker (PIN 27)</p>
+              <p className="font-display text-sm font-bold text-ink-primary">
+                {telemetry.statusMist === "ON" ? "Pengkabutan Aktif" : telemetry.statusMist === "OFF" ? "Siaga (Standby)" : "Menunggu Data"}
+              </p>
+            </div>
+          </div>
+          <span className={`km-badge ${
+            telemetry.statusMist === "ON" ? "km-badge-teal" : "km-badge-neutral"
+          } font-mono text-xs font-bold`}>
+            {telemetry.statusMist || "OFF"}
+          </span>
+        </div>
+
+        {/* Status Motor Pemutar Rak */}
+        <div className="km-card p-4 bg-surface flex items-center justify-between border-l-4 border-l-purple-500 shadow-sm transition-all">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+              telemetry.statusMotor === "ON"
+                ? "bg-purple-100 text-purple-600 shadow-[0_0_12px_rgba(168,85,247,0.35)] animate-spin"
+                : "bg-alpine-low text-ink-outline"
+            }`}>
+              <Icon name="autorenew" className="text-[22px]" />
+            </div>
+            <div>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-ink-secondary">Motor Rak (PIN 26)</p>
+              <p className="font-display text-sm font-bold text-ink-primary">
+                {telemetry.statusMotor === "ON" ? "Memutar Rak (30s)..." : telemetry.statusMotor === "OFF" ? "Siaga (Otomatis 4 Jam)" : "Menunggu Data"}
+              </p>
+            </div>
+          </div>
+          <span className={`km-badge ${
+            telemetry.statusMotor === "ON" ? "km-badge-success" : "km-badge-neutral"
+          } font-mono text-xs font-bold`}>
+            {telemetry.statusMotor || "OFF"}
+          </span>
+        </div>
+      </div>
+
       {(() => {
         const activeEggsCount = Array.isArray(eggs)
           ? eggs.filter(e => e.akhir !== "Gagal" && e.akhir !== "Menetas").length
@@ -210,6 +287,9 @@ export default function DashboardPage({
         currentTemp={currentTemp}
         currentHum={currentHum}
       />
+
+      {/* Panel Kontrol Aktuator & Threshold MQTT */}
+      <MqttCommandPanel telemetry={telemetry} publish={publish} role={role} />
       
       {role === "admin" && <HatcheryPerformanceChart eggs={eggs} />}
       

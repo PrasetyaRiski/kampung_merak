@@ -240,7 +240,7 @@ class User {
 
 ```dart
 class Breeder {
-  final String id;           // "MRK-F0-001"
+  final String id;           // F0: "JB01" (jantan) / "BB01" (betina); anak: "JB01BB02-01"
   final String? nama;
   final String jenisKelamin; // "jantan" | "betina"
   final DateTime? tanggalLahir;
@@ -265,11 +265,13 @@ class Breeder {
 }
 ```
 
+> **Kontrak ID silsilah:** `id` opsional saat POST — kosongkan agar server generate (`JB01`/`BB01` untuk F0, `{Jantan}{Betina}-{NN}` untuk anak). Saat PUT, `jenisKelamin`/`parentJantanId`/`parentBetinaId` tidak boleh berubah (prefix terkunci; beda prefix → `422`, sudah punya turunan → `400`).
+
 ### 4.3 Egg
 
 ```dart
 class Egg {
-  final String id;           // "EGG-001"
+  final String id;           // "{indukJantan}{indukBetina}-{nomor}", contoh "JB01BB02-01"
   final int slot;            // 1-100
   final String indukJantanId;
   final String indukBetinaId;
@@ -294,10 +296,10 @@ class Egg {
 
 ```dart
 class Chick {
-  final String id;           // "CHK-001"
+  final String id;           // "{eggId}-C{nomor}", contoh "JB01BB02-01-C01"
   final String eggId;
-  final String? indukJantanId;  // auto-inherit dari egg
-  final String? indukBetinaId;  // auto-inherit dari egg
+  final String? indukJantanId;  // auto-isi server dari egg (read-only)
+  final String? indukBetinaId;  // auto-isi server dari egg (read-only)
   final String tanggalMenetas;  // "2026-07-17"
   final double beratAwal;       // gram
   final String skorKesehatan;
@@ -312,7 +314,11 @@ class Chick {
 }
 ```
 
+> **Kontrak ID silsilah:** `id` opsional saat POST (kosong = server generate `{eggId}-C{NN}`). `eggId` terkunci saat update. Rename hanya `-C{NN}`; ganti egg → `422`.
+
 ### 4.5 IncubatorSettings
+
+> **Kontrak aktual (superset):** `GET /api/incubator/settings` mengembalikan kredensial MQTT (`mqtt_url`, `mqtt_username`, `mqtt_password`, `status`) **plus** threshold (`suhu_min/max`, `kelembapan_min/max`, `interval_rotasi_menit`). `PUT` menerima field threshold saja. Sesuaikan model di bawah dengan menambahkan field MQTT opsional.
 
 ```dart
 class IncubatorSettings {
@@ -664,6 +670,8 @@ Sumber status inkubator di dashboard: MQTT realtime (utama) + `GET /api/incubato
 - Tanggal picker
 - Select parent jantan & betina dari list breeder
 - Mode: Create (POST) / Edit (PUT)
+- **Create**: tanpa ID (server generate silsilah otomatis).
+- **Edit**: jenis kelamin & parent di-disable (prefix terkunci). Error `422` = prefix diganti, `400` = sudah punya turunan.
 
 ### 6.8 Breeder Lineage Screen
 - Tree view: 3 generasi ke atas
@@ -684,6 +692,8 @@ Sumber status inkubator di dashboard: MQTT realtime (utama) + `GET /api/incubato
 - Tanggal masuk, fertilitas, akhir
 - Catatan
 - Action: Edit, Delete
+- **Create**: tanpa ID (server generate `{Jantan}{Betina}-{NN}`).
+- **Edit**: induk di-disable; prefix terkunci. Error `422` = prefix diganti, `400` = sudah punya anakan.
 
 ### 6.12 Chicks List Screen
 - List chick cards (ID, tanggal menetas, status)
@@ -692,8 +702,10 @@ Sumber status inkubator di dashboard: MQTT realtime (utama) + `GET /api/incubato
 ### 6.13 Chick Detail Screen
 - All fields + photo
 - Link ke egg asal
-- Induk jantan & betina (auto-inherit)
+- Induk jantan & betina (auto-inherit, read-only dari server)
 - Action: Edit, Delete
+- **Create**: tanpa ID (server generate `{eggId}-C{NN}`).
+- **Edit**: egg asal di-disable; hanya suffix `-C{NN}` yang berubah. Error `422` = ganti egg.
 
 ### 6.14 Sales List Screen
 - List sale cards (item, pembeli, status, harga)
@@ -993,6 +1005,12 @@ class CctvScreen extends ConsumerStatefulWidget { ... }
 // - onError / reachable==false -> CctvErrorView (videocam_off + Hubungkan Ulang)
 // - Badge: LIVE (hijau pulse) / MENYAMBUNG (kuning) / OFFLINE (merah)
 ```
+
+> **Kontrak silsilah (semua POST breeders/eggs/chicks):** field `id` opsional, kosongkan agar server generate. Body PUT tidak boleh mengubah field terkunci (`jenis_kelamin`/`parent_*`, `induk_*`, `egg_id`); `id` di body = id baru yang hanya boleh beda suffix. Error `422` = prefix diganti, `400` = ID dipakai / sudah punya turunan.
+
+### 7.4 Pola ID Silsilah (catatan, tanpa kode)
+
+> Breeder F0 `JB{NN}`/`BB{NN}`, telur/anak `{Jantan}{Betina}-{NN}`, chick `{eggId}-C{NN}`. Prefix dibaca langsung dari ID sehingga badge silsilah bisa dirender offline; ID lama (`MRK-`/`EGG-`/`CHK-`) tetap ditampilkan apa adanya.
 
 ---
 

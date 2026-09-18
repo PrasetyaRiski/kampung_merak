@@ -272,23 +272,24 @@ export default function App() {
   useEffect(() => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
     if (apiBaseUrl === undefined) return;
-    if (telemetry.temp === null || telemetry.humidity === null || telemetry.temp === undefined || telemetry.humidity === undefined) return;
+    const currentTemp = telemetry.temperature ?? telemetry.temp;
+    const currentHum = telemetry.humidity;
+    if (currentTemp == null || currentHum == null) return;
 
     const now = Date.now();
     if (now - lastSavedTelemetryRef.current >= 60000) {
       lastSavedTelemetryRef.current = now;
 
-      const nowIso = new Date().toISOString();
-      const temp = parseFloat(telemetry.temp);
-      const hum = parseFloat(telemetry.humidity);
+      const temp = parseFloat(currentTemp);
+      const hum = parseFloat(currentHum);
 
       // Sinkronisasi status inkubator terkini
-      const lampuStatus = temp >= 37.0 && temp <= 38.5 ? "ON" : "OFF";
+      const lampuStatus = telemetry.statusLamp !== "UNKNOWN" ? telemetry.statusLamp : (temp <= 37.5 ? "ON" : "OFF");
       const statusData = {
         suhu_sekarang: temp,
         kelembapan_sekarang: hum,
         lampu_status: lampuStatus,
-        terakhir_rotasi: null
+        terakhir_rotasi: telemetry.statusMotor === "ON" ? new Date().toISOString() : null
       };
       fetchApi(`/api/incubator/status`, {
         method: "POST",
