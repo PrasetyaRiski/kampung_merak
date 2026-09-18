@@ -36,39 +36,35 @@ server {
 
     # Proxy untuk menghindari CORS di Production (sama seperti vite.config.js)
     location /api/ {
-    proxy_pass http://kampung-merak-api:8000/api/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass https://api-merak.abdulrosyid.my.id/api/;
+        proxy_ssl_server_name on;
     }
 
     location /auth/ {
-        proxy_pass http://kampung-merak-api:8000/auth/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass https://api-merak.abdulrosyid.my.id/auth/;
+        proxy_ssl_server_name on;
     }
 
+    # Proxy Stream CCTV (RTSP Gateway MJPEG)
     location /video_feed {
-        proxy_pass http://host.docker.internal:5000/video_feed;
-        proxy_buffering off;
-        proxy_read_timeout 86400s;
-        proxy_send_timeout 86400s;
-        proxy_set_header Host $host;
-    }
- 
-    location /kandang_feed {
-        proxy_pass http://host.docker.internal:5000/kandang_feed;
+        proxy_pass http://cctv-gateway:5000/video_feed;
         proxy_buffering off;
         proxy_read_timeout 86400s;
         proxy_send_timeout 86400s;
         proxy_set_header Host $host;
     }
 
+    location /kandang_feed {
+        proxy_pass http://cctv-gateway:5000/kandang_feed;
+        proxy_buffering off;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+        proxy_set_header Host $host;
+    }
+
+    # Proxy CCTV Health Check
     location /cctv_health {
-        proxy_pass http://host.docker.internal:5000/health;
+        proxy_pass http://cctv-gateway:5000/health;
         proxy_set_header Host $host;
     }
 }
