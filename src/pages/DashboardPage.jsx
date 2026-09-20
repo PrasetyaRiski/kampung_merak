@@ -138,7 +138,8 @@ export default function DashboardPage({
         />
       </div>
 
-      {/* Aktuator & Status Perangkat ESP32 */}
+      {/* Aktuator & Status Perangkat ESP32 — hanya untuk admin/operator */}
+      {role !== "viewer" && (
       <div className="grid gap-4 sm:grid-cols-3">
         {/* Status Lampu Pemanas */}
         <div className="km-card p-4 bg-surface flex items-center justify-between border-l-4 border-l-amber-500 shadow-sm transition-all">
@@ -212,6 +213,7 @@ export default function DashboardPage({
           </span>
         </div>
       </div>
+      )}
 
       {(() => {
         const activeEggsCount = Array.isArray(eggs)
@@ -239,7 +241,7 @@ export default function DashboardPage({
         );
       })()}
 
-      {financeSummary && (() => {
+      {financeSummary && role !== "viewer" && (() => {
         const totalPemasukan = financeSummary.total_pemasukan ?? 0;
         const totalPengeluaran = financeSummary.total_pengeluaran ?? 0;
         const labaBersih = (financeSummary.laba_bersih != null && financeSummary.laba_bersih !== 0)
@@ -288,8 +290,10 @@ export default function DashboardPage({
         currentHum={currentHum}
       />
 
-      {/* Panel Kontrol Aktuator & Threshold MQTT */}
-      <MqttCommandPanel telemetry={telemetry} publish={publish} role={role} />
+      {/* Panel Kontrol Aktuator & Threshold MQTT — hanya untuk admin/operator */}
+      {role !== "viewer" && (
+        <MqttCommandPanel telemetry={telemetry} publish={publish} role={role} />
+      )}
       
       {role === "admin" && <HatcheryPerformanceChart eggs={eggs} />}
       

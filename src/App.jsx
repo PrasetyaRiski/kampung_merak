@@ -54,7 +54,6 @@ export default function App() {
   const [activePage, setActivePage] = useStoredState("km_page", "dashboard");
   const [role, setRole] = useStoredState("km_role", "viewer");
   const [verifiedRoles, setVerifiedRoles] = useStoredState("km_verified_roles", {});
-  const [darkMode, setDarkMode] = useStoredState("km_dark_mode", false);
   const [activeVariety, setActiveVariety] = useStoredState("km_active_variety", "hijau");
   const [cctvUrl, setCctvUrl] = useStoredState("km_cctv_url", "rtsp://admin:Admin123@192.168.110.227:554/V_ENC_000");
   // === DATA STATES ===
@@ -248,15 +247,6 @@ export default function App() {
     useMqttBridge();
 
   // === SIDE-EFFECTS ===
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      document.documentElement.style.colorScheme = "dark";
-    } else {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.style.colorScheme = "light";
-    }
-  }, [darkMode]);
 
   useEffect(() => {
     if (sidebarOpen) {
@@ -331,8 +321,6 @@ export default function App() {
     setActivePage(pageId);
     setSidebarOpen(false);
   };
-
-  const toggleDarkMode = () => setDarkMode((prev) => !prev);
 
   // === RENDER PAGE ===
   const renderPage = () => {
@@ -423,27 +411,44 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* Mobile Topbar */}
-      <div
-        className="flex h-16 items-center justify-between border-b px-4 lg:hidden sticky top-0 z-50 shadow-sm transition-colors duration-500"
-        style={{ borderColor: "var(--alpine-high)", backgroundColor: "var(--surface)", color: "var(--ink-primary)" }}
+    <div className="flex min-h-screen flex-col">
+      {/* ── Global Top Banner: Logo Pertamina & Kampung Merak ── */}
+      <header
+        className="w-full h-16 flex items-center justify-between px-4 lg:px-6 border-b sticky top-0 z-[90] shadow-sm"
+        style={{ borderColor: "var(--alpine-high)", backgroundColor: "var(--surface)" }}
       >
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-white shadow-sm border border-alpine-high">
-            <img src="/logo.png" alt="Logo" className="h-full w-full object-cover" />
-          </div>
-          <span className="font-display font-extrabold text-ink-primary">Kampung Merak</span>
+        {/* Logos kiri */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          <img
+            src="/images/logo-pertamina.png"
+            alt="Logo Pertamina"
+            className="h-6 sm:h-8 w-auto object-contain"
+          />
+          <div className="w-px h-6 bg-alpine-high" aria-hidden="true" />
+          <img
+            src="/images/logo-kampung-merak.png"
+            alt="Logo Kampung Merak"
+            className="h-8 w-8 sm:h-10 sm:w-10 object-contain"
+          />
         </div>
-        <button
-          type="button"
-          onClick={() => setSidebarOpen(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-alpine-high bg-alpine-low text-ink-secondary"
-          aria-label="Buka Menu"
-        >
-          <span className="material-symbols-outlined">menu</span>
-        </button>
-      </div>
+        {/* Konten Kanan */}
+        <div className="flex items-center gap-4">
+          <p className="hidden sm:block font-mono text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--ink-outline)" }}>
+            Program Konservasi Merak Hijau
+          </p>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg border border-alpine-high bg-alpine-low text-ink-secondary lg:hidden"
+            aria-label="Buka Menu"
+          >
+            <span className="material-symbols-outlined text-[20px] sm:text-[24px]">menu</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Main layout: Sidebar + Content */}
+      <div className="flex flex-1 flex-col lg:flex-row relative">
 
       <Sidebar
         connection={connection}
@@ -455,8 +460,6 @@ export default function App() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
-        darkMode={darkMode}
-        toggleDarkMode={toggleDarkMode}
       />
 
       {/* Desktop vertical middle toggle handle */}
@@ -529,6 +532,7 @@ export default function App() {
           onCancel={() => setRoleRequest(null)}
         />
       )}
+      </div>
     </div>
   );
 }

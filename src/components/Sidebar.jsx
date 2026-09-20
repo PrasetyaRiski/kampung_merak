@@ -36,8 +36,6 @@ export default function Sidebar({
   isOpen = false,
   onClose = () => {},
   onToggle = () => {},
-  darkMode = false,
-  toggleDarkMode = () => {},
 }) {
   const permissions = ROLES[role];
   const connected = connection.status === "connected";
@@ -59,20 +57,20 @@ export default function Sidebar({
     : "bg-red-400";
 
   const sidebarSurfaceStyle = {
-    backgroundColor: darkMode ? "var(--forest-midnight)" : "var(--surface)",
-    color: darkMode ? "#f3f7f5" : "var(--ink-primary)",
+    backgroundColor: "var(--surface)",
+    color: "var(--ink-primary)",
     transform: isOpen ? "translateX(0)" : "translateX(-100%)",
     transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease, color 0.5s ease",
   };
-  const panelBorder = darkMode ? "rgba(255,255,255,0.08)" : "var(--alpine-high)";
-  const panelBg = darkMode ? "rgba(255,255,255,0.04)" : "var(--alpine-low)";
-  const mutedText = darkMode ? "#accdc5" : "var(--ink-secondary)";
-  const softText = darkMode ? "#74948d" : "var(--ink-outline)";
-  const accentText = darkMode ? "var(--teal-container)" : "var(--teal-iridescence)";
+  const panelBorder = "var(--alpine-high)";
+  const panelBg = "var(--alpine-low)";
+  const mutedText = "var(--ink-secondary)";
+  const softText = "var(--ink-outline)";
+  const accentText = "var(--teal-iridescence)";
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-[70] flex h-screen w-[280px] flex-col overflow-hidden transition-all duration-300 mobile-sidebar ${
+      className={`fixed left-0 top-16 z-[70] flex h-[calc(100vh-64px)] w-[280px] flex-col overflow-hidden transition-all duration-300 mobile-sidebar ${
         isOpen ? "open" : ""
       }`}
       style={sidebarSurfaceStyle}
@@ -156,62 +154,59 @@ export default function Sidebar({
         aria-label="Navigasi halaman"
       >
         <div className="space-y-5 pb-2">
-          {menuGroups.map((group) => (
-            <div key={group.label}>
-              <p className="mb-2 px-1 font-mono text-[9px] font-bold uppercase tracking-[0.14em]" style={{ color: softText }}>
-                {group.label}
-              </p>
-              <div className="space-y-0.5">
-                {group.items.map((menu) => {
-                  const permitted = permissions.allowed.includes(menu.id);
-                  const active = activePage === menu.id;
-                  return (
-                    <button
-                      key={menu.id}
-                      type="button"
-                      onClick={() => permitted && onPageChange(menu.id)}
-                      disabled={!permitted}
-                      aria-current={active ? "page" : undefined}
-                      className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-150 ${
-                        active
-                          ? darkMode
-                            ? "bg-white/[0.09] text-teal-container"
-                            : "bg-[var(--teal-container)]/20 text-[var(--teal-iridescence)]"
-                          : permitted
-                          ? darkMode
-                            ? "text-[#accdc5] hover:bg-white/[0.05] hover:text-white"
+          {menuGroups.map((group) => {
+            // Filter items: only show items that are in the role's allowed list
+            const visibleItems = group.items.filter((menu) => permissions.allowed.includes(menu.id));
+            if (visibleItems.length === 0) return null;
+            return (
+              <div key={group.label}>
+                <p className="mb-2 px-1 font-mono text-[9px] font-bold uppercase tracking-[0.14em]" style={{ color: softText }}>
+                  {group.label}
+                </p>
+                <div className="space-y-0.5">
+                  {visibleItems.map((menu) => {
+                    const active = activePage === menu.id;
+                    return (
+                      <button
+                        key={menu.id}
+                        type="button"
+                        onClick={() => onPageChange(menu.id)}
+                        aria-current={active ? "page" : undefined}
+                        className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-150 ${
+                          active
+                            ? "bg-[var(--teal-container)]/20 text-[var(--teal-iridescence)]"
                             : "text-[var(--ink-secondary)] hover:bg-[var(--alpine-low)] hover:text-[var(--ink-primary)]"
-                          : "cursor-not-allowed text-[var(--ink-outline)] opacity-60"
-                      }`}
-                    >
-                      {/* Active indicator bar */}
-                      {active && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-teal-container" />
-                      )}
-                      <Icon
-                        name={menu.icon}
-                        className={`text-[20px] flex-shrink-0 ${
-                          active ? accentText : permitted ? softText : "text-[#3d5550]"
                         }`}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className={`block truncate font-body text-sm leading-tight ${
-                            active ? "font-bold" : "font-semibold"
+                      >
+                        {/* Active indicator bar */}
+                        {active && (
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-teal-container" />
+                        )}
+                        <Icon
+                          name={menu.icon}
+                          className={`text-[20px] flex-shrink-0 ${
+                            active ? accentText : softText
                           }`}
-                        >
-                          {menu.label}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span
+                            className={`block truncate font-body text-sm leading-tight ${
+                              active ? "font-bold" : "font-semibold"
+                            }`}
+                          >
+                            {menu.label}
+                          </span>
+                          <span className="block truncate font-body text-[10px] leading-4" style={{ color: softText }}>
+                            {menu.subtitle}
+                          </span>
                         </span>
-                        <span className="block truncate font-body text-[10px] leading-4" style={{ color: softText }}>
-                          {permitted ? menu.subtitle : "Terkunci untuk role ini"}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </nav>
 
@@ -231,37 +226,6 @@ export default function Sidebar({
             Viewer: read-only. Operator: tanpa akun & penjualan.
           </p>
         </div>
-
-        {/* Dark mode toggle */}
-        <button
-          type="button"
-          onClick={toggleDarkMode}
-          className="mt-2 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200"
-          style={{ borderColor: panelBorder, backgroundColor: panelBg }}
-          aria-label={darkMode ? "Beralih ke mode terang" : "Beralih ke mode gelap"}
-          aria-pressed={darkMode}
-        >
-          <span className="flex items-center gap-2">
-            <Icon
-              name={darkMode ? "light_mode" : "dark_mode"}
-              className="text-[18px]"
-              style={{ color: accentText }}
-            />
-            <span className="font-body text-xs font-semibold" style={{ color: accentText }}>
-              {darkMode ? "Mode Terang" : "Mode Gelap"}
-            </span>
-          </span>
-          {/* Toggle pill */}
-          <span
-            className="relative h-5 w-9 rounded-full transition-colors duration-200"
-            style={{ backgroundColor: darkMode ? "var(--teal-container)" : "var(--alpine-high)" }}
-          >
-            <span
-              className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200"
-              style={{ left: darkMode ? "18px" : "2px" }}
-            />
-          </span>
-        </button>
       </div>
     </aside>
   );
