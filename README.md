@@ -59,7 +59,6 @@ kampung-merak-inkubator-mqtt/
 ├── nginx.conf                # Konfigurasi reverse proxy Nginx untuk produksi
 ├── Dockerfile                # Docker build frontend Nginx
 ├── docker-compose.yml        # Orkestrasi kontainer Docker frontend
-├── deploy.py                 # Skrip otomatisasi deployment ke server lokal/VPS
 └── README.md                 # Dokumentasi proyek
 ```
 
@@ -148,23 +147,16 @@ Aplikasi ini menggunakan **Dynamic Backend Configuration** untuk MQTT:
 
 ## 🚢 Deployment Produksi (Server / VPS / Docker)
 
-Proyek ini telah dilengkapi dengan kontainerisasi **Docker** dan skrip deploy SFTP/SSH otomatis:
+Proyek ini telah dilengkapi dengan kontainerisasi **Docker** untuk kemudahan deployment:
 
-1. **Build Frontend Lokal:**
+1. **Pull & Deploy di Server:**
    ```bash
-   npm run build
+   git pull origin main
+   docker compose build --no-cache frontend
+   docker compose up -d --force-recreate frontend
    ```
-2. **Deploy Otomatis ke Server:**
-   ```bash
-   python deploy.py
-   ```
-   Skrip `deploy.py` akan:
-   - Mengemas folder `dist/`, `fastapi-backend/`, `server/`, dan konfigurasi `nginx.conf`.
-   - Mengunggah berkas terkompresi ke server via SFTP.
-   - Mengekstrak berkas, me-rebuild image Docker, dan merestart kontainer `kampung-merak-frontend`.
-   - Mengonfirmasi status HTTP port `8087`.
 
-3. **Proxy CCTV di Nginx:**
+2. **Proxy CCTV di Nginx:**
    Pada file `nginx.conf`, rute `/video_feed` otomatis diteruskan ke gateway RTSP internal (`host.docker.internal:5000`), sehingga live feed CCTV aman dari kendala *Mixed Content HTTPS*.
 
 ---
