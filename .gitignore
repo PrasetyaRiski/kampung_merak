@@ -48,3 +48,10 @@ Thumbs.db
 *.rar
 *.zip
 *.tar.gz
+*.tar
+
+# Deployment scripts with credentials (CRITICAL)
+deploy*.py
+deploy_bundle.tar.gz
+frontend_project.tar.gz
+
