@@ -23,7 +23,7 @@ function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, col
   const areaD = `${pathD} L ${toX(series.length - 1)} ${padding.top + chartH} L ${toX(0)} ${padding.top + chartH} Z`;
   const lastValue = series[series.length - 1];
   const isIdeal = lastValue >= idealRange[0] && lastValue <= idealRange[1];
-  const labels = timeLabels || ["T-24", "T-20", "T-16", "T-12", "T-8", "T-4", "Live"];
+  const labels = timeLabels || ["-24", "-20", "-16", "-12", "-8", "-4", "Live"];
 
   return (
     <div className="rounded-2xl border border-alpine-high bg-alpine-low/80 p-4">
@@ -90,7 +90,7 @@ export default function IncubationTrendChart({ trend, humidityTrend, historicalT
 
   let displayTemp = trend;
   let displayHum = humidityTrend;
-  let customLabels = ["T-24", "T-20", "T-16", "T-12", "T-8", "T-4", "Live"];
+  let customLabels = ["-24", "-20", "-16", "-12", "-8", "-4", "Live"];
   let headerTitle = "24 Pembacaan Terakhir";
   let headerSubtitle = "Visual pemantauan fluktuasi parameter dari data terbaru mesin.";
 
