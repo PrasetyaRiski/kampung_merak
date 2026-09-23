@@ -23,7 +23,7 @@ function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, col
   const areaD = `${pathD} L ${toX(series.length - 1)} ${padding.top + chartH} L ${toX(0)} ${padding.top + chartH} Z`;
   const lastValue = series[series.length - 1];
   const isIdeal = lastValue >= idealRange[0] && lastValue <= idealRange[1];
-  const timeLabels = ["00.00", "04.00", "08.00", "12.00", "16.00", "20.00", "24.00"];
+  const timeLabels = ["T-24", "T-20", "T-16", "T-12", "T-8", "T-4", "Live"];
 
   return (
     <div className="rounded-2xl border border-alpine-high bg-alpine-low/80 p-4">
@@ -93,8 +93,8 @@ export default function IncubationTrendChart({ trend, humidityTrend, isConnected
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-teal-iridescence">Tren Kondisi</p>
-          <h2 className="mt-1 font-display text-xl font-extrabold text-ink-primary">Suhu & Kelembaban 24 Jam</h2>
-          <p className="mt-1 font-body text-xs text-ink-secondary">Visual pemantauan parameter inkubator untuk mendeteksi drift fluktuasi.</p>
+          <h2 className="mt-1 font-display text-xl font-extrabold text-ink-primary">24 Pembacaan Terakhir</h2>
+          <p className="mt-1 font-body text-xs text-ink-secondary">Visual pemantauan fluktuasi parameter dari data terbaru mesin.</p>
         </div>
         {isLive ? (
           <span className="km-badge km-badge-success font-mono text-[10px] flex items-center gap-1.5">
