@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "./Icon.jsx";
 import StatusBadge, { getDeviceVariant, getDeviceLabel } from "./StatusBadge.jsx";
 import FormField from "./FormField.jsx";
 import { ROLES, MQTT_TOPICS } from "../data/constants.js";
+import { fetchApi } from "../utils/api.js";
 
 export default function MqttCommandPanel({ telemetry, publish, role }) {
   // Threshold States
@@ -20,6 +21,26 @@ export default function MqttCommandPanel({ telemetry, publish, role }) {
   const disabled = !ROLES[role]?.canControl;
   const configurationLocked = !ROLES[role]?.canConfigure;
 
+  // Load settings on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadSettings() {
+      try {
+        const data = await fetchApi('/api/incubator/settings', { method: 'GET' });
+        if (isMounted && data) {
+          if (data.suhu_min !== undefined) setTempOn(data.suhu_min.toString());
+          if (data.suhu_max !== undefined) setTempOff(data.suhu_max.toString());
+          if (data.kelembapan_min !== undefined) setMinHumidity(data.kelembapan_min.toString());
+          if (data.kelembapan_max !== undefined) setMaxHumidity(data.kelembapan_max.toString());
+        }
+      } catch (err) {
+        console.error("Gagal mengambil pengaturan dari database:", err);
+      }
+    }
+    loadSettings();
+    return () => { isMounted = false; };
+  }, []);
+
   const showToast = (msg) => {
     setFeedbackToast(msg);
     window.setTimeout(() => setFeedbackToast(""), 3500);
@@ -35,21 +56,45 @@ export default function MqttCommandPanel({ telemetry, publish, role }) {
     return Number.isFinite(number) && number >= 30 && number <= 45;
   };
 
-  const publishHumidityThreshold = () => {
+  const publishHumidityThreshold = async () => {
     if (!validHumidity(minHumidity) || !validHumidity(maxHumidity) || Number(minHumidity) >= Number(maxHumidity)) return;
     const okLow = publish(MQTT_TOPICS.humidityThresholdLow, Number(minHumidity).toFixed(1));
     const okHigh = publish(MQTT_TOPICS.humidityThresholdHigh, Number(maxHumidity).toFixed(1));
     if (okLow && okHigh) {
-      showToast(`Ambang kelembaban dikirim: ${minHumidity}% - ${maxHumidity}%`);
+      try {
+        await fetchApi('/api/incubator/settings', {
+          method: 'PUT',
+          body: JSON.stringify({
+            kelembapan_min: Number(minHumidity),
+            kelembapan_max: Number(maxHumidity)
+          })
+        });
+        showToast(`Ambang kelembaban sinkron ke DB & ESP32: ${minHumidity}% - ${maxHumidity}%`);
+      } catch (err) {
+        console.error("Gagal sinkronisasi DB:", err);
+        showToast(`MQTT terkirim, tapi gagal sinkronisasi DB: ${err.message}`);
+      }
     }
   };
 
-  const publishTempThreshold = () => {
+  const publishTempThreshold = async () => {
     if (!validTemp(tempOn) || !validTemp(tempOff) || Number(tempOn) >= Number(tempOff)) return;
     const okOn = publish(MQTT_TOPICS.lampThresholdOn, Number(tempOn).toFixed(1));
     const okOff = publish(MQTT_TOPICS.lampThresholdOff, Number(tempOff).toFixed(1));
     if (okOn && okOff) {
-      showToast(`Ambang suhu pemanas dikirim: ON <= ${tempOn}°C, OFF >= ${tempOff}°C`);
+      try {
+        await fetchApi('/api/incubator/settings', {
+          method: 'PUT',
+          body: JSON.stringify({
+            suhu_min: Number(tempOn),
+            suhu_max: Number(tempOff)
+          })
+        });
+        showToast(`Ambang suhu sinkron ke DB & ESP32: ON <= ${tempOn}°C, OFF >= ${tempOff}°C`);
+      } catch (err) {
+        console.error("Gagal sinkronisasi DB:", err);
+        showToast(`MQTT terkirim, tapi gagal sinkronisasi DB: ${err.message}`);
+      }
     }
   };
 

@@ -468,14 +468,16 @@ export default function App() {
         onClick={() => setSidebarOpen(!sidebarOpen)}
         onMouseEnter={() => setIsHandleHovered(true)}
         onMouseLeave={() => setIsHandleHovered(false)}
-        className="fixed top-1/2 -translate-y-1/2 z-[80] hidden lg:flex h-8 w-8 items-center justify-center rounded-full border border-alpine-high bg-surface shadow-md hover:bg-alpine-low text-ink-primary transition-all active:scale-95 cursor-pointer"
+        className="fixed top-1/2 -translate-y-1/2 z-[80] hidden lg:flex h-10 w-10 items-center justify-center rounded-full border border-alpine-high bg-surface shadow-lg hover:bg-alpine-low text-teal-iridescence transition-all active:scale-95 cursor-pointer group"
         style={{
-          left: sidebarOpen ? "264px" : (isHandleHovered ? "0px" : "-16px"),
+          left: sidebarOpen ? "260px" : (isHandleHovered ? "0px" : "-20px"),
           transition: "left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.1s, background-color 0.2s, color 0.2s",
         }}
         title={sidebarOpen ? "Sembunyikan Sidebar" : "Tampilkan Sidebar"}
       >
-        <span className="material-symbols-outlined text-[20px]">
+        <div className="absolute inset-0 rounded-full border-2 border-teal-iridescence/40 animate-ping opacity-60"></div>
+        <div className="absolute inset-0 rounded-full shadow-[0_0_15px_rgba(32,201,151,0.5)] animate-pulse"></div>
+        <span className="material-symbols-outlined text-[26px] relative z-10">
           {sidebarOpen ? "chevron_left" : "chevron_right"}
         </span>
       </button>
