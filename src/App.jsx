@@ -61,6 +61,7 @@ export default function App() {
   const [peafowl, setPeafowl] = useStoredState("km_peafowl", INITIAL_PEAFOWL);
   const [sales, setSalesState] = useStoredState("km_sales", INITIAL_SALES);
   const [finance, setFinanceState] = useStoredState("km_finance", []);
+  const [historicalTelemetry, setHistoricalTelemetry] = useState(null);
 
   // Sync wrappers for database REST API
   const setEggs = async (val) => {
@@ -239,6 +240,9 @@ export default function App() {
         if (Array.isArray(data)) setFinanceState(data);
       }).catch(err => console.warn("Gagal memuat finance:", err)),
       fetchApi('/api/incubator/status').then(status => console.log("Status inkubator dari API:", status)).catch(err => console.warn("Gagal memuat status inkubator:", err)),
+      fetchApi('/api/dashboard/telemetry/24h').then(data => {
+        if (Array.isArray(data)) setHistoricalTelemetry(data);
+      }).catch(err => console.warn("Gagal memuat riwayat telemetri 24h:", err)),
     ]);
   }, []);
 
@@ -350,7 +354,9 @@ export default function App() {
             clientId={clientId}
             temperatureTrend={temperatureTrend}
             humidityTrend={humidityTrend}
+            historicalTelemetry={historicalTelemetry}
             activeVariety={activeVariety}
+            setActiveVariety={setActiveVariety}
             eggs={eggs}
             logs={logs}
           />

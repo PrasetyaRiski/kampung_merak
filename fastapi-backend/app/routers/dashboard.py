@@ -1,7 +1,9 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from sqlalchemy import func
 
 from ..database import get_db
@@ -13,6 +15,58 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
+class HourlyTelemetry(BaseModel):
+    time_label: str
+    temperature: float | None = None
+    humidity: float | None = None
+
+@router.get("/telemetry/24h", response_model=List[HourlyTelemetry])
+def get_24h_telemetry(db: Session = Depends(get_db)):
+    """Mengambil riwayat suhu dan kelembapan 24 jam terakhir, dikelompokkan per jam."""
+    from ..models import TelemetryLog
+    now = datetime.utcnow()
+    cutoff = now - timedelta(hours=24)
+    cutoff_iso = cutoff.isoformat()
+
+    logs = db.query(TelemetryLog).filter(TelemetryLog.timestamp >= cutoff_iso).all()
+
+    buckets = []
+    for i in range(23, -1, -1):
+        bucket_time = now - timedelta(hours=i)
+        buckets.append({
+            "label": bucket_time.strftime("%H:00"),
+            "temp_sum": 0.0,
+            "hum_sum": 0.0,
+            "count": 0
+        })
+
+    for log in logs:
+        try:
+            # Handle standard ISO and replace Z
+            clean_ts = log.timestamp.replace('Z', '')
+            log_dt = datetime.fromisoformat(clean_ts)
+            
+            diff = now - log_dt
+            hours_ago = int(diff.total_seconds() // 3600)
+            if 0 <= hours_ago < 24:
+                idx = 23 - hours_ago
+                buckets[idx]["temp_sum"] += float(log.temperature)
+                buckets[idx]["hum_sum"] += float(log.humidity)
+                buckets[idx]["count"] += 1
+        except Exception:
+            pass
+
+    results = []
+    for b in buckets:
+        avg_temp = round(b["temp_sum"] / b["count"], 1) if b["count"] > 0 else None
+        avg_hum = round(b["hum_sum"] / b["count"], 1) if b["count"] > 0 else None
+        results.append(HourlyTelemetry(
+            time_label=b["label"],
+            temperature=avg_temp,
+            humidity=avg_hum
+        ))
+
+    return results
 
 def _month_range_utc(now: datetime) -> tuple[datetime, datetime]:
     start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)

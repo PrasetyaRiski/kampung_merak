@@ -26,7 +26,8 @@ export default function DashboardPage({
   setActiveVariety,
   publish,
   eggs,
-  logs
+  logs,
+  historicalTelemetry
 }) {
   const [summary, setSummary] = useState(null);
   const [incubatorStatus, setIncubatorStatus] = useState(null);
@@ -285,6 +286,7 @@ export default function DashboardPage({
       <IncubationTrendChart
         trend={temperatureTrend}
         humidityTrend={humidityTrend}
+        historicalTelemetry={historicalTelemetry}
         isConnected={isMqttConnected}
         currentTemp={currentTemp}
         currentHum={currentHum}

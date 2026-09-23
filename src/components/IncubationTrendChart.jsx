@@ -1,6 +1,6 @@
 import { DEFAULT_TREND, DEFAULT_HUMIDITY_TREND } from "../data/constants.js";
 
-function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, color, gradientId, isLive, currentValue }) {
+function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, color, gradientId, isLive, currentValue, timeLabels }) {
   const width = 640;
   const height = 180;
   const padding = { top: 16, right: 10, bottom: 28, left: 8 };
@@ -23,7 +23,7 @@ function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, col
   const areaD = `${pathD} L ${toX(series.length - 1)} ${padding.top + chartH} L ${toX(0)} ${padding.top + chartH} Z`;
   const lastValue = series[series.length - 1];
   const isIdeal = lastValue >= idealRange[0] && lastValue <= idealRange[1];
-  const timeLabels = ["T-24", "T-20", "T-16", "T-12", "T-8", "T-4", "Live"];
+  const labels = timeLabels || ["T-24", "T-20", "T-16", "T-12", "T-8", "T-4", "Live"];
 
   return (
     <div className="rounded-2xl border border-alpine-high bg-alpine-low/80 p-4">
@@ -78,23 +78,45 @@ function renderCompactChart({ title, data, fallbackSeries, idealRange, unit, col
           })}
         </svg>
         <div className="flex justify-between px-3 pb-1 font-mono text-[10px] font-semibold text-ink-outline">
-          {timeLabels.map((label) => <span key={label}>{label}</span>)}
+          {labels.map((label, idx) => <span key={idx}>{label}</span>)}
         </div>
       </div>
     </div>
   );
 }
 
-export default function IncubationTrendChart({ trend, humidityTrend, isConnected, currentTemp, currentHum }) {
+export default function IncubationTrendChart({ trend, humidityTrend, historicalTelemetry, isConnected, currentTemp, currentHum }) {
   const isLive = Boolean(isConnected);
+
+  let displayTemp = trend;
+  let displayHum = humidityTrend;
+  let customLabels = ["T-24", "T-20", "T-16", "T-12", "T-8", "T-4", "Live"];
+  let headerTitle = "24 Pembacaan Terakhir";
+  let headerSubtitle = "Visual pemantauan fluktuasi parameter dari data terbaru mesin.";
+
+  if (historicalTelemetry && historicalTelemetry.length > 0) {
+      displayTemp = historicalTelemetry.map(h => h.temperature != null ? h.temperature : 37.5);
+      displayHum = historicalTelemetry.map(h => h.humidity != null ? h.humidity : 55.0);
+      
+      const lbls = [];
+      for (let i = 0; i < historicalTelemetry.length; i += 4) {
+          lbls.push(historicalTelemetry[i].time_label);
+      }
+      if (lbls.length < 7 && historicalTelemetry.length > 0) {
+          lbls.push(historicalTelemetry[historicalTelemetry.length - 1].time_label);
+      }
+      customLabels = lbls.slice(0, 7); // ensure max 7 labels
+      headerTitle = "Suhu & Kelembaban 24 Jam";
+      headerSubtitle = "Visual pemantauan parameter inkubator untuk 24 jam terakhir.";
+  }
 
   return (
     <section className="km-card p-6">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-teal-iridescence">Tren Kondisi</p>
-          <h2 className="mt-1 font-display text-xl font-extrabold text-ink-primary">24 Pembacaan Terakhir</h2>
-          <p className="mt-1 font-body text-xs text-ink-secondary">Visual pemantauan fluktuasi parameter dari data terbaru mesin.</p>
+          <h2 className="mt-1 font-display text-xl font-extrabold text-ink-primary">{headerTitle}</h2>
+          <p className="mt-1 font-body text-xs text-ink-secondary">{headerSubtitle}</p>
         </div>
         {isLive ? (
           <span className="km-badge km-badge-success font-mono text-[10px] flex items-center gap-1.5">
@@ -109,28 +131,30 @@ export default function IncubationTrendChart({ trend, humidityTrend, isConnected
         )}
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
-        {renderCompactChart({
-          title: "Suhu",
-          data: trend,
-          fallbackSeries: DEFAULT_TREND,
-          idealRange: [37.5, 38.0],
-          unit: "°C",
-          color: "#006b58",
-          gradientId: "tempTrend",
-          isLive,
-          currentValue: currentTemp,
-        })}
-        {renderCompactChart({
-          title: "Kelembaban",
-          data: humidityTrend,
-          fallbackSeries: DEFAULT_HUMIDITY_TREND,
-          idealRange: [45, 50],
-          unit: "%",
-          color: "#2563eb",
-          gradientId: "humidityTrend",
-          isLive,
-          currentValue: currentHum,
-        })}
+          {renderCompactChart({
+            title: "Suhu Udara",
+            data: displayTemp,
+            fallbackSeries: DEFAULT_TREND,
+            idealRange: [37.5, 38.0],
+            unit: "°C",
+            color: "#059669",
+            gradientId: "tempGradient",
+            isLive,
+            currentValue: currentTemp,
+            timeLabels: customLabels
+          })}
+          {renderCompactChart({
+            title: "Kelembaban",
+            data: displayHum,
+            fallbackSeries: DEFAULT_HUMIDITY_TREND,
+            idealRange: [45, 50],
+            unit: "%",
+            color: "#0284c7",
+            gradientId: "humGradient",
+            isLive,
+            currentValue: currentHum,
+            timeLabels: customLabels
+          })}
       </div>
     </section>
   );
