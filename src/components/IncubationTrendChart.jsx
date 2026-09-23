@@ -91,7 +91,7 @@ export default function IncubationTrendChart({ trend, humidityTrend, historicalT
   let displayTemp = trend;
   let displayHum = humidityTrend;
   let customLabels = ["", "", "", "", "", "", "Live"];
-  let headerTitle = "24 Pembacaan Terakhir";
+  let headerTitle = "Suhu & Kelembaban";
   let headerSubtitle = "Visual pemantauan fluktuasi parameter dari data terbaru mesin.";
 
   if (historicalTelemetry && historicalTelemetry.length > 0) {
