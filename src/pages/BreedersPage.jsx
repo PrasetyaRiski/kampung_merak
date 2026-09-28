@@ -115,7 +115,7 @@ export default function BreedersPage({ role }) {
         setEditingId(null);
       } else {
         // Create: tanpa ID, server generate silsilah otomatis (JB01/BB01 atau {Jantan}{Betina}-{NN})
-        const payload = { ...formData };
+        const payload = { ...formData, id: "" };
         if (!payload.parent_jantan_id) payload.parent_jantan_id = null;
         if (!payload.parent_betina_id) payload.parent_betina_id = null;
         if (!payload.tanggal_lahir) payload.tanggal_lahir = null;

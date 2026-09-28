@@ -85,7 +85,7 @@ export default function ChicksPage({ role }) {
         setEditingId(null);
       } else {
         // Create: tanpa ID, server generate silsilah {egg_id}-C{NN} otomatis
-        const payload = { ...formData, berat_awal: Number(formData.berat_awal) };
+        const payload = { ...formData, id: "", berat_awal: Number(formData.berat_awal) };
         if (!payload.foto_url) payload.foto_url = null;
         if (!payload.catatan) payload.catatan = null;
 

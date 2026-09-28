@@ -84,6 +84,7 @@ export default function EggPage({ role }) {
         // Create: tanpa ID, server generate silsilah {Jantan}{Betina}-{NN} otomatis
         const payload = {
           ...formData,
+          id: "",
           slot: parseInt(formData.slot, 10),
           induk_jantan_id: formData.induk_jantan_id || null,
           induk_betina_id: formData.induk_betina_id || null,
