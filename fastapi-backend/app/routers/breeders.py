@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -47,6 +48,37 @@ def breeder_to_detail(db: Session, breeder: Breeder) -> BreederDetailResponse:
         **{c.name: getattr(breeder, c.name) for c in breeder.__table__.columns},
         **perf,
     )
+
+
+def generate_breeder_id(db: Session, jenis_kelamin: str, parent_jantan_id: Optional[str] = None, parent_betina_id: Optional[str] = None) -> str:
+    pj = str(parent_jantan_id).strip() if parent_jantan_id else ""
+    pb = str(parent_betina_id).strip() if parent_betina_id else ""
+    if pj and pb:
+        prefix = f"{pj}{pb}-"
+    elif pj:
+        prefix = f"{pj}-"
+    elif pb:
+        prefix = f"{pb}-"
+    else:
+        is_jantan = str(jenis_kelamin).strip().lower() in ["jantan", "male"]
+        prefix = "JB" if is_jantan else "BB"
+        existing = db.query(Breeder.id).filter(Breeder.id.like(f"{prefix}%")).all()
+        nums = []
+        for (eid,) in existing:
+            m = re.search(r"^" + re.escape(prefix) + r"(\d+)$", eid)
+            if m:
+                nums.append(int(m.group(1)))
+        next_n = max(nums) + 1 if nums else 1
+        return f"{prefix}{next_n:02d}"
+
+    existing = db.query(Breeder.id).filter(Breeder.id.like(f"{prefix}%")).all()
+    nums = []
+    for (eid,) in existing:
+        m = re.search(r"-(\d+)$", eid)
+        if m:
+            nums.append(int(m.group(1)))
+    next_n = max(nums) + 1 if nums else 1
+    return f"{prefix}{next_n:02d}"
 
 
 @router.get("", response_model=List[BreederResponse])
@@ -108,10 +140,27 @@ def get_breeder_lineage(breeder_id: str, db: Session = Depends(get_db)):
 
 @router.post("", response_model=BreederResponse, status_code=201)
 def create_breeder(breeder_data: BreederCreate, current_user=Depends(require_role("pemilik", "staff")), db: Session = Depends(get_db)):
-    existing = db.query(Breeder).filter(Breeder.id == breeder_data.id).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="ID breeder sudah digunakan")
-    breeder = Breeder(**breeder_data.model_dump())
+    data = breeder_data.model_dump()
+    breeder_id = data.get("id")
+    if not breeder_id or not str(breeder_id).strip():
+        data["id"] = generate_breeder_id(
+            db,
+            data.get("jenis_kelamin", "Jantan"),
+            data.get("parent_jantan_id"),
+            data.get("parent_betina_id"),
+        )
+    else:
+        data["id"] = str(breeder_id).strip()
+        existing = db.query(Breeder).filter(Breeder.id == data["id"]).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="ID breeder sudah digunakan")
+
+    if not data.get("parent_jantan_id") or not str(data["parent_jantan_id"]).strip():
+        data["parent_jantan_id"] = None
+    if not data.get("parent_betina_id") or not str(data["parent_betina_id"]).strip():
+        data["parent_betina_id"] = None
+
+    breeder = Breeder(**data)
     db.add(breeder)
     db.commit()
     db.refresh(breeder)
@@ -123,7 +172,13 @@ def update_breeder(breeder_id: str, breeder_data: BreederCreate, current_user=De
     breeder = db.query(Breeder).filter(Breeder.id == breeder_id).first()
     if not breeder:
         raise HTTPException(status_code=404, detail="Breeder tidak ditemukan")
-    for key, value in breeder_data.model_dump().items():
+    data = breeder_data.model_dump()
+    data.pop("id", None)
+    if not data.get("parent_jantan_id") or not str(data["parent_jantan_id"]).strip():
+        data["parent_jantan_id"] = None
+    if not data.get("parent_betina_id") or not str(data["parent_betina_id"]).strip():
+        data["parent_betina_id"] = None
+    for key, value in data.items():
         setattr(breeder, key, value)
     db.commit()
     db.refresh(breeder)
