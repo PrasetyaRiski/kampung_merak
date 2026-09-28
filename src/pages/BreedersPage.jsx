@@ -39,10 +39,11 @@ function formatTimeAgo(dateStr) {
 }
 
 function getStatusVariant(status) {
-  if (status === "breeding") return "success";
-  if (status === "retired") return "warning";
-  if (status === "sold") return "info";
-  if (status === "deceased") return "danger";
+  const s = String(status || "").toLowerCase();
+  if (s === "breeding") return "success";
+  if (s === "retired" || s === "resting") return "warning";
+  if (s === "sold" || s === "ready_for_sale") return "info";
+  if (s === "deceased") return "danger";
   return "neutral";
 }
 
@@ -86,8 +87,8 @@ export default function BreedersPage({ role }) {
     }
   };
 
-  const jantanList = breeders.filter((b) => b.jenis_kelamin === "Jantan" || b.jenis_kelamin === "jantan");
-  const betinaList = breeders.filter((b) => b.jenis_kelamin === "Betina" || b.jenis_kelamin === "betina");
+  const jantanList = breeders.filter((b) => String(b.jenis_kelamin || "").toLowerCase() === "jantan");
+  const betinaList = breeders.filter((b) => String(b.jenis_kelamin || "").toLowerCase() === "betina");
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -415,7 +416,7 @@ export default function BreedersPage({ role }) {
                       )}
                     </td>
                     <td><span className="font-body text-sm font-medium">{b.nama || "—"}</span></td>
-                    <td><span className="text-sm">{b.jenis_kelamin === "Jantan" ? "♂ Jantan" : "♀ Betina"}</span></td>
+                    <td><span className="text-sm">{String(b.jenis_kelamin || "").toLowerCase() === "jantan" ? "♂ Jantan" : "♀ Betina"}</span></td>
                     <td><StatusBadge label={b.generasi} variant="teal" showIcon={false} /></td>
                     <td><span className="text-sm">{b.varian_warna}</span></td>
                     <td><StatusBadge label={b.status} variant={getStatusVariant(b.status)} showIcon={false} /></td>
@@ -567,7 +568,7 @@ export default function BreedersPage({ role }) {
                     <p className="font-display text-xl font-bold text-ink-primary">{lineageData.breeder.nama || lineageData.breeder.id}</p>
                     <p className="font-mono text-xs text-ink-secondary mt-1">{lineageData.breeder.id}</p>
                     <div className="flex items-center gap-2 mt-3">
-                      <StatusBadge label={lineageData.breeder.jenis_kelamin} variant={lineageData.breeder.jenis_kelamin === "Jantan" ? "info" : "danger"} showIcon={false} />
+                      <StatusBadge label={lineageData.breeder.jenis_kelamin} variant={String(lineageData.breeder.jenis_kelamin || "").toLowerCase() === "jantan" ? "info" : "danger"} showIcon={false} />
                       <StatusBadge label={lineageData.breeder.generasi} variant="neutral" showIcon={false} />
                       <StatusBadge label={lineageData.breeder.varian_warna} variant="neutral" showIcon={false} />
                     </div>
