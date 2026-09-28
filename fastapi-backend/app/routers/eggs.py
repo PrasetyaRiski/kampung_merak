@@ -99,7 +99,7 @@ def update_egg(egg_id: str, egg_data: EggCreate, current_user=Depends(require_ro
 
 
 @router.delete("/{egg_id}")
-def delete_egg(egg_id: str, current_user=Depends(require_role("pemilik")), db: Session = Depends(get_db)):
+def delete_egg(egg_id: str, current_user=Depends(require_role("pemilik", "staff")), db: Session = Depends(get_db)):
     egg = db.query(Egg).filter(Egg.id == egg_id).first()
     if not egg:
         raise HTTPException(status_code=404, detail="Telur tidak ditemukan")

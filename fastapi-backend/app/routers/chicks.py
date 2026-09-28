@@ -77,7 +77,7 @@ def update_chick(chick_id: str, chick_data: ChickCreate, current_user=Depends(re
 
 
 @router.delete("/{chick_id}")
-def delete_chick(chick_id: str, current_user=Depends(require_role("pemilik")), db: Session = Depends(get_db)):
+def delete_chick(chick_id: str, current_user=Depends(require_role("pemilik", "staff")), db: Session = Depends(get_db)):
     chick = db.query(Chick).filter(Chick.id == chick_id).first()
     if not chick:
         raise HTTPException(status_code=404, detail="Anakan tidak ditemukan")

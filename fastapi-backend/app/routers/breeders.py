@@ -186,7 +186,7 @@ def update_breeder(breeder_id: str, breeder_data: BreederCreate, current_user=De
 
 
 @router.delete("/{breeder_id}")
-def delete_breeder(breeder_id: str, current_user=Depends(require_role("pemilik")), db: Session = Depends(get_db)):
+def delete_breeder(breeder_id: str, current_user=Depends(require_role("pemilik", "staff")), db: Session = Depends(get_db)):
     breeder = db.query(Breeder).filter(Breeder.id == breeder_id).first()
     if not breeder:
         raise HTTPException(status_code=404, detail="Breeder tidak ditemukan")

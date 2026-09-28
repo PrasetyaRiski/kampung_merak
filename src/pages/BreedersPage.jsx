@@ -464,13 +464,15 @@ export default function BreedersPage({ role }) {
       {/* Delete Confirmation */}
       {deleteConfirm && (
         <ConfirmDialog
+          open={!!deleteConfirm}
           title="Hapus Indukan"
-          message={`Apakah Anda yakin ingin menghapus data indukan ${deleteConfirm.nama || deleteConfirm.id}? Aksi ini tidak dapat dibatalkan.`}
-          confirmText={isDeleting ? "Menghapus..." : "Hapus"}
-          cancelText="Batal"
+          description={`Apakah Anda yakin ingin menghapus data indukan ${deleteConfirm.nama || deleteConfirm.id}? Aksi ini tidak dapat dibatalkan.`}
+          confirmLabel={isDeleting ? "Menghapus..." : "Hapus Indukan"}
+          cancelLabel="Batal"
           onConfirm={handleDelete}
           onCancel={() => setDeleteConfirm(null)}
-          isDestructive={true}
+          loading={isDeleting}
+          variant="danger"
         />
       )}
 

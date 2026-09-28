@@ -5,16 +5,25 @@ import Icon from "./Icon.jsx";
  * ConfirmDialog – accessible confirmation modal
  */
 export default function ConfirmDialog({
-  open,
+  open = true,
   title = "Konfirmasi Tindakan",
   description,
-  confirmLabel = "Konfirmasi",
-  cancelLabel = "Batal",
+  message,
+  desc,
+  confirmLabel,
+  confirmText,
+  cancelLabel,
+  cancelText,
   variant = "danger",
   onConfirm,
   onCancel,
+  loading = false,
+  isDestructive = true,
 }) {
   const confirmBtnRef = useRef(null);
+  const textDesc = description || message || desc;
+  const textConfirm = confirmLabel || confirmText || "Konfirmasi";
+  const textCancel = cancelLabel || cancelText || "Batal";
 
   useEffect(() => {
     if (open && confirmBtnRef.current) {
@@ -24,11 +33,11 @@ export default function ConfirmDialog({
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "Escape" && open) onCancel?.();
+      if (e.key === "Escape" && open && !loading) onCancel?.();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onCancel]);
+  }, [open, loading, onCancel]);
 
   if (!open) return null;
 
@@ -54,7 +63,7 @@ export default function ConfirmDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
-      onClick={(e) => e.target === e.currentTarget && onCancel?.()}
+      onClick={(e) => e.target === e.currentTarget && !loading && onCancel?.()}
     >
       <div className="modal-content p-6">
         <div className="mb-5 flex items-start gap-4">
@@ -68,20 +77,31 @@ export default function ConfirmDialog({
             >
               {title}
             </h2>
-            {description && (
+            {textDesc && (
               <p className="mt-1.5 font-body text-sm leading-6 text-ink-secondary">
-                {description}
+                {textDesc}
               </p>
             )}
           </div>
         </div>
 
         <div className="flex justify-end gap-2.5">
-          <button type="button" onClick={onCancel} className="km-btn km-btn-secondary">
-            {cancelLabel}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onCancel}
+            className="km-btn km-btn-secondary"
+          >
+            {textCancel}
           </button>
-          <button type="button" ref={confirmBtnRef} onClick={onConfirm} className={vc.confirmCls}>
-            {confirmLabel}
+          <button
+            type="button"
+            ref={confirmBtnRef}
+            disabled={loading}
+            onClick={onConfirm}
+            className={vc.confirmCls}
+          >
+            {loading ? "Menghapus..." : textConfirm}
           </button>
         </div>
       </div>
